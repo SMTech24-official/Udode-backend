@@ -133,6 +133,17 @@ const updatePassword = catchAsync(async (req, res) => {
   });
 });
 
+const resendOtp = catchAsync(async (req, res) => {
+  const result = await UserServices.resendOtpIntoDB(req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'OTP sent successfully!',
+    data: result,
+  });
+});
+
 export const UserControllers = {
   registerUser,
   getAllUsers,
@@ -146,4 +157,5 @@ export const UserControllers = {
   verifyOtp,
   socialLogin,
   updatePassword,
+  resendOtp,
 };

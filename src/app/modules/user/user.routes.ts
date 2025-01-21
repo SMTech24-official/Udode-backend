@@ -42,6 +42,11 @@ router.post(
   UserControllers.forgotPassword,
 );
 
+router.post(
+  '/resend-otp',
+  UserControllers.resendOtp,
+);
+
 router.put(
   '/verify-otp',
   validateRequest(UserValidations.verifyOtpSchema),

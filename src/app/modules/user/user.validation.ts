@@ -85,7 +85,7 @@ const socialLoginSchema = z.object({
         message: 'Invalid email format!',
       })
       .optional(),
-    fullname: z.string({
+    fullName: z.string({
       required_error: 'name is required!',
     }),
     fcmToken: z.string({
