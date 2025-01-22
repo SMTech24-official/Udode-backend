@@ -4,6 +4,7 @@ import validateRequest from '../../middlewares/validateRequest';
 import { UserValidations } from '../user/user.validation';
 import { UserControllers } from '../user/user.controller';
 import { UserRoleEnum } from '@prisma/client';
+import { multerUpload } from '../../utils/multerUpload';
 const router = express.Router();
 
 router.post(
@@ -17,11 +18,8 @@ router.get('/', UserControllers.getAllUsers);
 router.get('/me', auth(), UserControllers.getMyProfile);
 
 router.get('/:id', UserControllers.getUserDetails);
-router.put(
-  '/update-profile',
-  auth(),
-  UserControllers.updateMyProfile,
-);
+
+router.put('/update-profile', auth(), UserControllers.updateMyProfile);
 
 router.put(
   '/update-user/:id',
@@ -29,12 +27,7 @@ router.put(
   UserControllers.updateUserRoleStatus,
 );
 
-router.put(
-  '/change-password',
-  auth(),
-  UserControllers.changePassword,
-);
-
+router.put('/change-password', auth(), UserControllers.changePassword);
 
 router.post(
   '/forgot-password',
@@ -42,10 +35,7 @@ router.post(
   UserControllers.forgotPassword,
 );
 
-router.post(
-  '/resend-otp',
-  UserControllers.resendOtp,
-);
+router.post('/resend-otp', UserControllers.resendOtp);
 
 router.put(
   '/verify-otp',
@@ -59,10 +49,7 @@ router.put(
   UserControllers.verifyOtpForgotPassword,
 );
 
-router.put(
-  '/update-password',
-  UserControllers.updatePassword,
-);
+router.put('/update-password', UserControllers.updatePassword);
 
 router.post(
   '/social-sign-up',
@@ -70,6 +57,11 @@ router.post(
   UserControllers.socialLogin,
 );
 
-
+router.put(
+  '/update-profile-image',
+  multerUpload.single('profileImage'),
+  auth(),
+  UserControllers.updateProfileImage,
+);
 
 export const UserRouters = router;

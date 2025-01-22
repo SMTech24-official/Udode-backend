@@ -21,20 +21,19 @@ const registerUser = z.object({
 
 const updateProfileSchema = z.object({
   body: z.object({
-    age: z
-      .number()
-      .int({
-        message: 'Age must be an integer!',
+    fullName: z
+      .string({
+        required_error: 'fullName is required!',
       })
       .optional(),
-    bio: z
+    location: z
       .string({
-        required_error: 'Bio is required!',
+        required_error: 'Address is required!',
       })
       .optional(),
-    lastDonationDate: z
+    phone: z
       .string({
-        required_error: 'Last donation date is required!',
+        required_error: 'Contact number is required!',
       })
       .optional(),
   }),

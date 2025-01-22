@@ -11,33 +11,227 @@ datasource db {
 }
 
 model User {
-  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
   fullName         String
-  email        String       @unique
-  password     String?
-  role         UserRoleEnum @default(USER)
-  status       UserStatus   @default(INACTIVE)
-  otp          Int?
-  otpExpiry    DateTime?
-  fcmToken     String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  
+  email            String         @unique
+  password         String?
+  role             UserRoleEnum   @default(USER)
+  status           UserStatus     @default(INACTIVE)
+  location         String?
+  phone            String?
+  isVerified       Boolean        @default(false)
+  image            String?
+  otp              Int?
+  otpExpiry        DateTime?
+  fcmToken         String?
+  onBoarding       Boolean        @default(false)
+  stripeAccountUrl String?
+  stripeCustomerId String?
+  senderCustomerID String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  notifications    Notification[]
+  roomsSent        Room[]         @relation("SenderRelation")
+  roomsReceived    Room[]         @relation("ReceiverRelation")
+  chatsSent        Chat[]         @relation("SenderRelation")
+  chatsReceived    Chat[]         @relation("ReceiverRelation")
+  terminals        Terminal[]
+  feeds            TerminalFeed[]
+  Trip             Trip[]
+  comments         Comment[]
+  senderPerson     Parcel[]       @relation("SenderPersonRelation")
+  deliveryPerson   Parcel[]       @relation("DeliveryPersonRelation")
+  categories       Category[]
 
   @@map("users")
 }
 
-model Profile {
-  id               String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId           String   @unique  @db.ObjectId
-  bio              String?
-  age              Int
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+model Terminal {
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String   @db.ObjectId
+  terminalName       String
+  fareRange          String
+  vendorName         String
+  location           String
+  latitude           Float
+  longitude          Float
+  openingHours       String
+  transportationType String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id])
 
-  @@map("profiles")
-  }
+  reviews      Review[]
+  TerminalFeed TerminalFeed[]
+  Trip         Trip[]
 
+  @@map("terminals")
+}
+
+model Review {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String
+  terminalId String   @db.ObjectId
+  rating     Int
+  comment    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  terminal Terminal @relation(fields: [terminalId], references: [id])
+
+  @@map("reviews")
+}
+
+model TerminalFeed {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String        @db.ObjectId
+  terminalId    String        @db.ObjectId
+  image         String
+  description   String
+  trafficStatus TrafficStatus @default(LOW)
+  categoryId    String        @db.ObjectId
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  terminal Terminal  @relation(fields: [terminalId], references: [id])
+  Category Category? @relation(fields: [categoryId], references: [id])
+
+  @@map("terminal_feedbacks")
+}
+
+model Category {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
+  categoryName String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user            User  @relation(fields: [userId], references: [id])
+
+  TerminalFeed TerminalFeed[]
+
+  @@map("categories")
+}
+
+model Trip {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @db.ObjectId
+  terminalId     String   @db.ObjectId
+  tripDate       DateTime
+  destination    String
+  additionalNote String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  terminal Terminal  @relation(fields: [terminalId], references: [id])
+  comments Comment[]
+
+  @@map("trips")
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  tripId    String   @db.ObjectId
+  parentId  String   @db.ObjectId
+  comment   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  trip Trip @relation(fields: [tripId], references: [id])
+ 
+
+  @@map("comments")
+}
+
+model Notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  title     String
+  body      String
+  data      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+model Chat {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  senderId   String   @db.ObjectId
+  receiverId String   @db.ObjectId
+  message    String
+  roomId     String   @db.ObjectId
+  images     String[]
+  isRead     Boolean  @default(false)
+  parcelId   String?  @db.ObjectId
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  sender     User     @relation("SenderRelation", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceiverRelation", fields: [receiverId], references: [id])
+  room       Room     @relation(fields: [roomId], references: [id])
+
+  @@map("chats")
+}
+
+model Room {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  senderId   String   @db.ObjectId
+  receiverId String   @db.ObjectId
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  sender     User     @relation("SenderRelation", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceiverRelation", fields: [receiverId], references: [id])
+  chat       Chat[]
+
+  @@map("rooms")
+}
+
+model Parcel {
+  id                   String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId               String        @db.ObjectId
+  deliveryPersonId     String?       @db.ObjectId
+  image                String
+  description          String
+  from                 String
+  to                   String
+  phone                String
+  emergencyNote        String
+  parcelTransportPrice Float
+  endDateTime          DateTime
+  parcelStatus         ParcelStatus  @default(PENDING)
+  paymentStatus        PaymentStatus @default(PENDING)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  senderPerson   User      @relation("SenderPersonRelation", fields: [userId], references: [id])
+  deliveryPerson User?     @relation("DeliveryPersonRelation", fields: [deliveryPersonId], references: [id])
+  payments       Payment[]
+
+  @@map("parcels")
+}
+
+model Payment {
+  id                       String        @id @default(auto()) @map("_id") @db.ObjectId
+  paymentId                String
+  paymentAmount            Float
+  parcelId                 String        @unique @db.ObjectId
+  paymentDate              DateTime      @default(now())
+  stripeCustomerIdProvider String
+  stripeAccountIdReceiver  String
+  status                   PaymentStatus @default(PENDING)
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+
+  parcel Parcel @relation(fields: [parcelId], references: [id])
+
+  @@map("payments")
+}
 
 enum UserRoleEnum {
   USER
@@ -49,4 +243,24 @@ enum UserStatus {
   ACTIVE
   INACTIVE
   BLOCKED
+}
+
+enum ParcelStatus {
+  PENDING
+  ACCEPTED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REQUIRES_CAPTURE
+}
+
+enum TrafficStatus {
+  LOW
+  MEDIUM
+  HIGH
 }

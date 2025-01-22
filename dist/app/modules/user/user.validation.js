@@ -24,20 +24,19 @@ const registerUser = zod_1.default.object({
 });
 const updateProfileSchema = zod_1.default.object({
     body: zod_1.default.object({
-        age: zod_1.default
-            .number()
-            .int({
-            message: 'Age must be an integer!',
+        fullName: zod_1.default
+            .string({
+            required_error: 'fullName is required!',
         })
             .optional(),
-        bio: zod_1.default
+        location: zod_1.default
             .string({
-            required_error: 'Bio is required!',
+            required_error: 'Address is required!',
         })
             .optional(),
-        lastDonationDate: zod_1.default
+        phone: zod_1.default
             .string({
-            required_error: 'Last donation date is required!',
+            required_error: 'Contact number is required!',
         })
             .optional(),
     }),
@@ -84,7 +83,7 @@ const socialLoginSchema = zod_1.default.object({
             message: 'Invalid email format!',
         })
             .optional(),
-        fullname: zod_1.default.string({
+        fullName: zod_1.default.string({
             required_error: 'name is required!',
         }),
         fcmToken: zod_1.default.string({

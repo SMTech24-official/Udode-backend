@@ -48,6 +48,9 @@ const loginUserFromDB = (payload) => __awaiter(void 0, void 0, void 0, function*
             email: payload.email,
         },
     });
+    if (!userData.password) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Password incorrect');
+    }
     const isCorrectPassword = yield bcrypt.compare(payload.password, userData.password);
     if (!isCorrectPassword) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Password incorrect');

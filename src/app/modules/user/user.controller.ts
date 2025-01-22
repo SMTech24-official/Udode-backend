@@ -2,6 +2,8 @@ import httpStatus from 'http-status';
 import sendResponse from '../../utils/sendResponse';
 import catchAsync from '../../utils/catchAsync';
 import { UserServices } from '../user/user.service';
+import AppError from '../../errors/AppError';
+import { uploadFileToSpace } from '../../utils/multerUpload';
 
 const registerUser = catchAsync(async (req, res) => {
 
@@ -35,6 +37,17 @@ const getMyProfile = catchAsync(async (req, res) => {
   });
 });
 
+const updateMyProfile = catchAsync(async (req, res) => {
+  const user = req.user as any;
+  const result = await UserServices.updateMyProfileIntoDB(user.id, req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'User profile updated successfully',
+    data: result,
+  });
+});
+
 const getUserDetails = catchAsync(async (req, res) => {
   const user = req.user as any;
   const result = await UserServices.getUserDetailsFromDB(user.id);
@@ -46,16 +59,7 @@ const getUserDetails = catchAsync(async (req, res) => {
   });
 });
 
-const updateMyProfile = catchAsync(async (req, res) => {
-  const user = req.user as any;
-  const result = await UserServices.updateMyProfileIntoDB(user.id, req.body);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    message: 'User profile updated successfully',
-    data: result,
-  });
-});
 
 const updateUserRoleStatus = catchAsync(async (req, res) => {
 const user = req.user as any;
@@ -144,12 +148,31 @@ const resendOtp = catchAsync(async (req, res) => {
   });
 });
 
+const updateProfileImage = catchAsync(async (req, res) => {
+  const user = req.user as any;
+  const file = req.file;
+
+  if (!file) {
+    throw new AppError(httpStatus.NOT_FOUND, 'file not found');
+  }
+  let fileUrl = '';
+  if (file) {
+    fileUrl = await uploadFileToSpace(file, 'retire-professional');
+  }
+  const result = await UserServices.updateProfileImageIntoDB(user.id, fileUrl);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Profile image updated successfully',
+    data: result,
+  });
+});
+
 export const UserControllers = {
   registerUser,
   getAllUsers,
   getMyProfile,
   getUserDetails,
-  updateMyProfile,
   updateUserRoleStatus,
   changePassword,
   verifyOtpForgotPassword,
@@ -158,4 +181,6 @@ export const UserControllers = {
   socialLogin,
   updatePassword,
   resendOtp,
+  updateProfileImage,
+  updateMyProfile,
 };

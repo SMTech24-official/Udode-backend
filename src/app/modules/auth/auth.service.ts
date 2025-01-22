@@ -15,6 +15,11 @@ const loginUserFromDB = async (payload: {
       email: payload.email,
     },
   });
+
+  if(!userData.password){
+    throw new AppError(httpStatus.BAD_REQUEST, 'Password incorrect');
+  }
+
   const isCorrectPassword: Boolean = await bcrypt.compare(
     payload.password,
     userData.password,

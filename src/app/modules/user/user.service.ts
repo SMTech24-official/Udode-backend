@@ -75,12 +75,12 @@ const registerUserIntoDB = async (payload: any) => {
           <p style="font-size: 18px;" >Verify email using this OTP: <span style="font-weight:bold"> ${otp} </span><br/> This OTP will be Expired in 5 minutes,</p>
         </div>
         <p style="font-size: 14px; color: #555;">If you did not request this change, please ignore this email. No further action is needed.</p>
-        <p style="font-size: 16px; margin-top: 20px;">Thank you,<br>YARG</p>
+        <p style="font-size: 16px; margin-top: 20px;">Thank you,<br>IYARGO</p>
       </td>
     </tr>
     <tr>
       <td style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #888; border-radius: 0 0 10px 10px;">
-        <p style="margin: 0;">&copy; ${new Date().getFullYear()} YARG Team. All rights reserved.</p>
+        <p style="margin: 0;">&copy; ${new Date().getFullYear()} IYARGO Team. All rights reserved.</p>
       </td>
     </tr>
     </table>
@@ -117,8 +117,11 @@ const getMyProfileFromDB = async (id: string) => {
       fullName: true,
       email: true,
       role: true,
-      createdAt: true,
-      updatedAt: true,
+      phone: true,
+      image: true,
+      status: true,
+      location: true,
+      isVerified: true,
     },
   });
 
@@ -141,26 +144,26 @@ const getUserDetailsFromDB = async (id: string) => {
 };
 
 const updateMyProfileIntoDB = async (id: string, payload: any) => {
-  const userProfileData = payload.Profile;
-  delete payload.Profile;
-
-  const userData = payload;
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id },
+  });
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
 
   // update user data
   await prisma.$transaction(async (transactionClient: any) => {
     // Update user data
     const updatedUser = await transactionClient.user.update({
       where: { id },
-      data: userData,
+      data: payload,
     });
 
-    // Update user profile data
-    const updatedUserProfile = await transactionClient.Profile.update({
-      where: { userId: id },
-      data: userProfileData,
-    });
+    if (!updatedUser) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'User not updated!');
+    }
 
-    return { updatedUser, updatedUserProfile };
+    return updatedUser;
   });
 
   // Fetch and return the updated user including the profile
@@ -265,12 +268,12 @@ const forgotPassword = async (payload: { email: string }) => {
           <p style="font-size: 18px;" >Verify email using this OTP: <span style="font-weight:bold"> ${otp} </span><br/> This OTP will be Expired in 5 minutes,</p>
         </div>
         <p style="font-size: 14px; color: #555;">If you did not request this change, please ignore this email. No further action is needed.</p>
-        <p style="font-size: 16px; margin-top: 20px;">Thank you,<br>YARG</p>
+        <p style="font-size: 16px; margin-top: 20px;">Thank you,<br>IYARGO</p>
       </td>
     </tr>
     <tr>
       <td style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #888; border-radius: 0 0 10px 10px;">
-        <p style="margin: 0;">&copy; ${new Date().getFullYear()} YARG Team. All rights reserved.</p>
+        <p style="margin: 0;">&copy; ${new Date().getFullYear()} IYARGO Team. All rights reserved.</p>
       </td>
     </tr>
     </table>
@@ -489,12 +492,12 @@ const resendOtpIntoDB = async (payload: any) => {
           <p style="font-size: 18px;" >Verify email using this OTP: <span style="font-weight:bold"> ${otp} </span><br/> This OTP will be Expired in 5 minutes,</p>
         </div>
         <p style="font-size: 14px; color: #555;">If you did not request this change, please ignore this email. No further action is needed.</p>
-        <p style="font-size: 16px; margin-top: 20px;">Thank you,<br>YARG</p>
+        <p style="font-size: 16px; margin-top: 20px;">Thank you,<br>IYARGO</p>
       </td>
     </tr>
     <tr>
       <td style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #888; border-radius: 0 0 10px 10px;">
-        <p style="margin: 0;">&copy; ${new Date().getFullYear()} YARG Team. All rights reserved.</p>
+        <p style="margin: 0;">&copy; ${new Date().getFullYear()} IYARGO Team. All rights reserved.</p>
       </td>
     </tr>
     </table>
@@ -505,6 +508,25 @@ const resendOtpIntoDB = async (payload: any) => {
 
   return { message: 'OTP sent via your email successfully' };
 };
+
+const updateProfileImageIntoDB = async (
+  userId: string,
+  profileImageUrl: string,
+) => {
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      image: profileImageUrl,
+    },
+  });
+
+  if (!updatedUser) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Profile image not updated!');
+  }
+
+  return updatedUser;
+};
+
 
 export const UserServices = {
   registerUserIntoDB,
@@ -520,4 +542,5 @@ export const UserServices = {
   socialLoginIntoDB,
   updatePasswordIntoDb,
   resendOtpIntoDB,
+  updateProfileImageIntoDB,
 };

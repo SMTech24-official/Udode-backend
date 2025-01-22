@@ -1,0 +1,21 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.terminalFeedRoutes = void 0;
+const express_1 = __importDefault(require("express"));
+const auth_1 = __importDefault(require("../../middlewares/auth"));
+const validateRequest_1 = __importDefault(require("../../middlewares/validateRequest"));
+const terminalFeed_controller_1 = require("./terminalFeed.controller");
+const terminalFeed_validation_1 = require("./terminalFeed.validation");
+const multerUpload_1 = require("../../utils/multerUpload");
+const parseBody_1 = require("../../middlewares/parseBody");
+const updateMulterUpload_1 = require("../../utils/updateMulterUpload");
+const router = express_1.default.Router();
+router.post('/', multerUpload_1.multerUpload.single('terminalFeedImage'), parseBody_1.parseBody, (0, auth_1.default)(), (0, validateRequest_1.default)(terminalFeed_validation_1.terminalFeedValidation.createSchema), terminalFeed_controller_1.terminalFeedController.createTerminalFeed);
+router.get('/', (0, auth_1.default)(), terminalFeed_controller_1.terminalFeedController.getTerminalFeedList);
+router.get('/:terminalFeedId', (0, auth_1.default)(), terminalFeed_controller_1.terminalFeedController.getTerminalFeedById);
+router.put('/:terminalFeedId', updateMulterUpload_1.updateMulterUpload.single('terminalFeedImage'), parseBody_1.parseBody, (0, auth_1.default)(), (0, validateRequest_1.default)(terminalFeed_validation_1.terminalFeedValidation.updateSchema), terminalFeed_controller_1.terminalFeedController.updateTerminalFeed);
+router.delete('/:terminalFeedId', (0, auth_1.default)(), terminalFeed_controller_1.terminalFeedController.deleteTerminalFeed);
+exports.terminalFeedRoutes = router;

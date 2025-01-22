@@ -1,0 +1,22 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ParcelRoutes = void 0;
+const express_1 = __importDefault(require("express"));
+const auth_1 = __importDefault(require("../../middlewares/auth"));
+const validateRequest_1 = __importDefault(require("../../middlewares/validateRequest"));
+const parcel_controller_1 = require("./parcel.controller");
+const parcel_validation_1 = require("./parcel.validation");
+const multerUpload_1 = require("../../utils/multerUpload");
+const parseBody_1 = require("../../middlewares/parseBody");
+const updateMulterUpload_1 = require("../../utils/updateMulterUpload");
+const router = express_1.default.Router();
+router.post('/', multerUpload_1.multerUpload.single('parcelImage'), parseBody_1.parseBody, (0, auth_1.default)(), (0, validateRequest_1.default)(parcel_validation_1.parcelValidation.createSchema), parcel_controller_1.parcelController.createParcel);
+router.get('/', (0, auth_1.default)(), parcel_controller_1.parcelController.getParcelList);
+router.get('/:parcelId', (0, auth_1.default)(), parcel_controller_1.parcelController.getParcelById);
+router.get('/user-parcels', (0, auth_1.default)(), parcel_controller_1.parcelController.getParcelListByUser);
+router.put('/:parcelId', updateMulterUpload_1.updateMulterUpload.single('parcelImage'), parseBody_1.parseBody, (0, auth_1.default)(), (0, validateRequest_1.default)(parcel_validation_1.parcelValidation.updateSchema), parcel_controller_1.parcelController.updateParcel);
+router.delete('/:parcelId', (0, auth_1.default)(), parcel_controller_1.parcelController.deleteParcel);
+exports.ParcelRoutes = router;
