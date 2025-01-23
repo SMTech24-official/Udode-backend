@@ -14,9 +14,9 @@ const createTerminalFeedIntoDb = async (
   const result = await prisma.terminalFeed.create({
     data: {
       ...data,
-      terminalFeedImage: terminalFeedImage,
+      image: terminalFeedImage,
       userId: userId,
-    }
+    },
   });
   if(!result){
     throw new AppError(httpStatus.BAD_REQUEST, 'TerminalFeed not created');

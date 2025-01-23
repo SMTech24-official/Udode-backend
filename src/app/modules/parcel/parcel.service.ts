@@ -1,15 +1,19 @@
 import prisma from '../../utils/prisma';
-import { UserRoleEnum, UserStatus } from '@prisma/client';
+import { ParcelStatus, PaymentStatus, UserRoleEnum, UserStatus } from '@prisma/client';
 import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
 
 const createParcelIntoDb = async (userId: string, parcelData: any) => {
   const { data, parcelImage } = parcelData;
+  
   const result = await prisma.parcel.create({
     data: {
       ...data,
       image: parcelImage,
       userId: userId,
+      endDateTime: new Date(data.endDateTime),
+      parcelStatus: ParcelStatus.PENDING,
+      paymentStatus: PaymentStatus.PENDING,
     },
   });
   if (!result) {
@@ -76,7 +80,10 @@ const updateParcelIntoDb = async (
     where: {
       id: parcelId,
     },
-    data: updateData,
+    data: {
+      ...updateData,
+      endDateTime: new Date(data.endDateTime),
+    },
   });
 
   if (!result) {

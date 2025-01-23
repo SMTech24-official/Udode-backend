@@ -8,19 +8,24 @@ const router = express.Router();
 
 router.post(
   '/',
-  auth(),
   validateRequest(commentValidation.createSchema),
+  auth(),
   commentController.createComment,
 );
 
-router.get('/', auth(), commentController.getCommentList);
+router.get('/:tripId', auth(), commentController.getCommentList);
 
-router.get('/:commentId', auth(), commentController.getCommentById);
+router.post(
+  '/reply',
+  validateRequest(commentValidation.updateSchema),
+  auth(),
+  commentController.replyCommentByTripId,
+);
 
 router.put(
   '/:commentId',
-  auth(),
   validateRequest(commentValidation.updateSchema),
+  auth(),
   commentController.updateComment,
 );
 

@@ -27,7 +27,7 @@ const getTripList = catchAsync(async (req, res) => {
 
 const getTripById = catchAsync(async (req, res) => {
   const user = req.user as any;
-  const result = await tripService.getTripByIdFromDb( req.params.id);
+  const result = await tripService.getTripByIdFromDb(req.params.tripId);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,

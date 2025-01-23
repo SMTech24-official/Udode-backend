@@ -14,12 +14,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parcelService = void 0;
 const prisma_1 = __importDefault(require("../../utils/prisma"));
+const client_1 = require("@prisma/client");
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
 const createParcelIntoDb = (userId, parcelData) => __awaiter(void 0, void 0, void 0, function* () {
     const { data, parcelImage } = parcelData;
     const result = yield prisma_1.default.parcel.create({
-        data: Object.assign(Object.assign({}, data), { image: parcelImage, userId: userId }),
+        data: Object.assign(Object.assign({}, data), { image: parcelImage, userId: userId, endDateTime: new Date(data.endDateTime), parcelStatus: client_1.ParcelStatus.PENDING, paymentStatus: client_1.PaymentStatus.PENDING }),
     });
     if (!result) {
         throw new AppError_1.default(http_status_1.default.CONFLICT, 'Parcel not created');
@@ -72,7 +73,7 @@ const updateParcelIntoDb = (userId, parcelId, parcelData) => __awaiter(void 0, v
         where: {
             id: parcelId,
         },
-        data: updateData,
+        data: Object.assign(Object.assign({}, updateData), { endDateTime: new Date(data.endDateTime) }),
     });
     if (!result) {
         throw new AppError_1.default(http_status_1.default.CONFLICT, 'Parcel not updated');

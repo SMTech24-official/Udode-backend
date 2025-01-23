@@ -7,6 +7,7 @@ const createTripIntoDb = async (userId: string, data: any) => {
   const result = await prisma.trip.create({
     data: {
       ...data,
+      tripDate: new Date(data.tripDate),
       userId: userId,
     },
   });
@@ -42,7 +43,10 @@ const updateTripIntoDb = async (userId: string, tripId: string, data: any) => {
       id: tripId,
       userId: userId,
     },
-    data,
+    data: {
+      ...data,
+      tripDate: new Date(data.tripDate),
+    }
   });
   if (!result) {
     throw new AppError(httpStatus.NOT_MODIFIED, 'Trip not updated');

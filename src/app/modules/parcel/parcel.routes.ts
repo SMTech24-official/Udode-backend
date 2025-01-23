@@ -14,20 +14,20 @@ router.post(
   '/',
   multerUpload.single('parcelImage'),
   parseBody,
-  auth(),
   validateRequest(parcelValidation.createSchema),
+  auth(),
   parcelController.createParcel,
 );
 
 router.get('/', auth(), parcelController.getParcelList);
-
-router.get('/:parcelId', auth(), parcelController.getParcelById);
 
 router.get(
     '/user-parcels',
     auth(),
     parcelController.getParcelListByUser,
 )
+router.get('/:parcelId', auth(), parcelController.getParcelById);
+
 
 router.put(
   '/:parcelId',

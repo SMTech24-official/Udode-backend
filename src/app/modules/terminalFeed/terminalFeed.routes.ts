@@ -6,6 +6,7 @@ import { terminalFeedValidation } from './terminalFeed.validation';
 import { multerUpload } from '../../utils/multerUpload';
 import { parseBody } from '../../middlewares/parseBody';
 import { updateMulterUpload } from '../../utils/updateMulterUpload';
+import { UserRoleEnum } from '@prisma/client';
 
 const router = express.Router();
 
@@ -13,8 +14,8 @@ router.post(
   '/',
   multerUpload.single('terminalFeedImage'),
   parseBody,
-  auth(),
   validateRequest(terminalFeedValidation.createSchema),
+  auth(UserRoleEnum.USER),
   terminalFeedController.createTerminalFeed,
 );
 

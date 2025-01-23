@@ -47,7 +47,7 @@ const getTerminalFeedById = catchAsync(async (req, res) => {
   const user = req.user as any;
   const result = await terminalFeedService.getTerminalFeedByIdFromDb(
     user.id,
-    req.params.id,
+    req.params.terminalFeedId,
   );
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -91,7 +91,7 @@ const deleteTerminalFeed = catchAsync(async (req, res) => {
   const user = req.user as any;
   const result = await terminalFeedService.deleteTerminalFeedItemFromDb(
     user.id,
-    req.params.id,
+    req.params.terminalFeedId,
   );
   sendResponse(res, {
     statusCode: httpStatus.OK,

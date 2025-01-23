@@ -3,12 +3,13 @@ import auth from '../../middlewares/auth';
 import validateRequest from '../../middlewares/validateRequest';
 import { terminalController } from './terminal.controller';
 import { terminalValidation } from './terminal.validation';
+import { UserRoleEnum } from '@prisma/client';
 
 const router = express.Router();
 
 router.post(
   '/',
-  auth(),
+  auth(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN),
   validateRequest(terminalValidation.createSchema),
   terminalController.createTerminal,
 );
@@ -24,6 +25,6 @@ router.put(
   terminalController.updateTerminal,
 );
 
-router.delete('/:id', auth(), terminalController.deleteTerminal);
+router.delete('/:id', auth(UserRoleEnum.ADMIN, UserRoleEnum.SUPER_ADMIN), terminalController.deleteTerminal);
 
 export const terminalRoutes = router;

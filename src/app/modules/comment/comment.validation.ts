@@ -1,18 +1,21 @@
 import { z } from 'zod';
 
 const createSchema = z.object({
-  tripId: z.string(),
-  parentId: z.string().optional(),
-  comment: z.string(),
+  body: z.object({
+    tripId: z.string(),
+    parentId: z.string().optional(),
+    comment: z.string(),
+  }),
 });
 
 const updateSchema = z.object({
-  tripId: z.string(),
-  parentId: z.string().optional(),
-  comment: z.string().optional(),
+  body: z.object({
+    tripId: z.string(),
+    comment: z.string(),
+  }),
 });
 
 export const commentValidation = {
-createSchema,
-updateSchema,
+  createSchema,
+  updateSchema,
 };

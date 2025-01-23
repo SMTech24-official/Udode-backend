@@ -16,7 +16,15 @@ const createTerminal = catchAsync(async (req, res) => {
 
 const getTerminalList = catchAsync(async (req, res) => {
   const user = req.user as any;
-  const result = await terminalService.getTerminalListFromDb();
+  const { rating, fareRange, search } = req.query;
+
+  const filters = {
+    rating: rating ? Number(rating) : undefined,
+    fareRange: fareRange as string,
+    search: search as string,
+  };
+
+  const result = await terminalService.getTerminalListFromDb(filters);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,

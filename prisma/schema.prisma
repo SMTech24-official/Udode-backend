@@ -42,6 +42,7 @@ model User {
   senderPerson     Parcel[]       @relation("SenderPersonRelation")
   deliveryPerson   Parcel[]       @relation("DeliveryPersonRelation")
   categories       Category[]
+  reviews          Review[]
 
   @@map("users")
 }
@@ -70,7 +71,7 @@ model Terminal {
 
 model Review {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId     String
+  userId     String   @db.ObjectId
   terminalId String   @db.ObjectId
   rating     Int
   comment    String
@@ -78,6 +79,7 @@ model Review {
   updatedAt  DateTime @updatedAt
 
   terminal Terminal @relation(fields: [terminalId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
 
   @@map("reviews")
 }
@@ -115,14 +117,14 @@ model Category {
 }
 
 model Trip {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId         String   @db.ObjectId
-  terminalId     String   @db.ObjectId
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String    @db.ObjectId
+  terminalId     String    @db.ObjectId
   tripDate       DateTime
   destination    String
   additionalNote String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   user     User      @relation(fields: [userId], references: [id])
   terminal Terminal  @relation(fields: [terminalId], references: [id])
@@ -132,20 +134,25 @@ model Trip {
 }
 
 model Comment {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @db.ObjectId
-  tripId    String   @db.ObjectId
-  parentId  String   @db.ObjectId
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String    @db.ObjectId
+  tripId    String    @db.ObjectId
+  parentId  String?   @db.ObjectId
   comment   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
-  trip Trip @relation(fields: [tripId], references: [id])
- 
+  user     User       @relation(fields: [userId], references: [id])
+  trip     Trip       @relation(fields: [tripId], references: [id])
+  parent   Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies  Comment[]  @relation("CommentReplies")
 
+  @@index([tripId], name: "idx_tripId") // Index for faster trip-based queries
+  @@index([userId], name: "idx_userId") // Index for user-specific queries
+  @@index([parentId], name: "idx_parentId") // Index for nested comments
   @@map("comments")
 }
+
 
 model Notification {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId

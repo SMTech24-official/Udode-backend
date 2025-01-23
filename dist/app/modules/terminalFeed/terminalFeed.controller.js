@@ -52,7 +52,7 @@ const getTerminalFeedList = (0, catchAsync_1.default)((req, res) => __awaiter(vo
 }));
 const getTerminalFeedById = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield terminalFeed_service_1.terminalFeedService.getTerminalFeedByIdFromDb(user.id, req.params.id);
+    const result = yield terminalFeed_service_1.terminalFeedService.getTerminalFeedByIdFromDb(user.id, req.params.terminalFeedId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -82,7 +82,7 @@ const updateTerminalFeed = (0, catchAsync_1.default)((req, res) => __awaiter(voi
 }));
 const deleteTerminalFeed = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield terminalFeed_service_1.terminalFeedService.deleteTerminalFeedItemFromDb(user.id, req.params.id);
+    const result = yield terminalFeed_service_1.terminalFeedService.deleteTerminalFeedItemFromDb(user.id, req.params.terminalFeedId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

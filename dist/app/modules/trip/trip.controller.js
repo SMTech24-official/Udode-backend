@@ -39,7 +39,7 @@ const getTripList = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, vo
 }));
 const getTripById = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield trip_service_1.tripService.getTripByIdFromDb(req.params.id);
+    const result = yield trip_service_1.tripService.getTripByIdFromDb(req.params.tripId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

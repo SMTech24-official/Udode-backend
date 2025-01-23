@@ -16,7 +16,7 @@ const createReview = catchAsync(async (req, res) => {
 
 const getReviewList = catchAsync(async (req, res) => {
   const user = req.user as any;
-  const result = await reviewService.getReviewListFromDb();
+  const result = await reviewService.getReviewListFromDb(req.params.terminalId);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -29,7 +29,7 @@ const getReviewById = catchAsync(async (req, res) => {
   const user = req.user as any;
   const result = await reviewService.getReviewByIdFromDb(
     user.id,
-    req.params.id,
+    req.params.reviewId,
   );
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -58,7 +58,7 @@ const deleteReview = catchAsync(async (req, res) => {
   const user = req.user as any;
   const result = await reviewService.deleteReviewItemFromDb(
     user.id,
-    req.params.id,
+    req.params.reviewId,
   );
   sendResponse(res, {
     statusCode: httpStatus.OK,

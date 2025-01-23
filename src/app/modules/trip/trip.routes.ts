@@ -19,8 +19,8 @@ router.get('/:tripId', auth(), tripController.getTripById);
 
 router.put(
   '/:tripId',
-  auth(),
   validateRequest(tripValidation.updateSchema),
+  auth(),
   tripController.updateTrip,
 );
 

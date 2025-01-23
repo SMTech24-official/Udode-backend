@@ -1,8 +1,7 @@
 import { z } from 'zod';
 
 const createSchema = z.object({
-
-    image: z.string(),
+  body: z.object({
     description: z.string(),
     from: z.string(),
     to: z.string(),
@@ -10,12 +9,11 @@ const createSchema = z.object({
     emergencyNote: z.string(),
     parcelTransportPrice: z.number(),
     endDateTime: z.string(),
-    
+  }),
 });
 
 const updateSchema = z.object({
-
-    image: z.string().optional(),
+  body: z.object({
     description: z.string().optional(),
     from: z.string().optional(),
     to: z.string().optional(),
@@ -23,10 +21,10 @@ const updateSchema = z.object({
     emergencyNote: z.string().optional(),
     parcelTransportPrice: z.number().optional(),
     endDateTime: z.string().optional(),
-
+  }),
 });
 
 export const parcelValidation = {
-createSchema,
-updateSchema,
+  createSchema,
+  updateSchema,
 };

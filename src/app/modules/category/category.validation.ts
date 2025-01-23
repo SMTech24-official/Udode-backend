@@ -1,15 +1,18 @@
 import { z } from 'zod';
 
 const createSchema = z.object({
-  categoryName: z.string().min(1, 'Name is required'),
-  
+  body: z.object({
+    categoryName: z.string().min(1, 'Name is required'),
+  }),
 });
 
 const updateSchema = z.object({
-  categoryName: z.string().optional(),
+  body: z.object({
+    categoryName: z.string(),
+  }),
 });
 
 export const categoryValidation = {
-createSchema,
-updateSchema,
+  createSchema,
+  updateSchema,
 };

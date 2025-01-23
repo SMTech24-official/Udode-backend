@@ -18,7 +18,7 @@ const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
 const createTripIntoDb = (userId, data) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield prisma_1.default.trip.create({
-        data: Object.assign(Object.assign({}, data), { userId: userId }),
+        data: Object.assign(Object.assign({}, data), { tripDate: new Date(data.tripDate), userId: userId }),
     });
     if (!result) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Trip not created');
@@ -49,7 +49,7 @@ const updateTripIntoDb = (userId, tripId, data) => __awaiter(void 0, void 0, voi
             id: tripId,
             userId: userId,
         },
-        data,
+        data: Object.assign(Object.assign({}, data), { tripDate: new Date(data.tripDate) })
     });
     if (!result) {
         throw new AppError_1.default(http_status_1.default.NOT_MODIFIED, 'Trip not updated');

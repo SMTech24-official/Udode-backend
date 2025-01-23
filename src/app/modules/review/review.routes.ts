@@ -8,19 +8,19 @@ const router = express.Router();
 
 router.post(
 '/',
-auth(),
 validateRequest(reviewValidation.createSchema),
+auth(),
 reviewController.createReview,
 );
 
-router.get('/', auth(), reviewController.getReviewList);
+router.get('/:terminalId', auth(), reviewController.getReviewList);
 
-router.get('/:reviewId', auth(), reviewController.getReviewById);
+router.get('/single/:reviewId', auth(), reviewController.getReviewById);
 
 router.put(
   '/:reviewId',
-  auth(),
   validateRequest(reviewValidation.updateSchema),
+  auth(),
   reviewController.updateReview,
 );
 

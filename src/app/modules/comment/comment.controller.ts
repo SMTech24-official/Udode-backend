@@ -16,7 +16,7 @@ const createComment = catchAsync(async (req, res) => {
 
 const getCommentList = catchAsync(async (req, res) => {
   const user = req.user as any;
-  const result = await commentService.getCommentListFromDb();
+  const result = await commentService.getCommentListFromDb(req.params.tripId);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -25,10 +25,12 @@ const getCommentList = catchAsync(async (req, res) => {
   });
 });
 
+
+
 const getCommentById = catchAsync(async (req, res) => {
   const user = req.user as any;
   const result = await commentService.getCommentByIdFromDb(
-    req.params.tripId,
+    req.params.commentId,
   );
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -57,12 +59,27 @@ const deleteComment = catchAsync(async (req, res) => {
   const user = req.user as any;
   const result = await commentService.deleteCommentItemFromDb(
     user.id,
-    req.params.tripId,
+    req.params.commentId,
   );
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Comment deleted successfully',
+    message: 'Comment and replies deleted successfully',
+    data: result,
+  });
+});
+
+
+const replyCommentByTripId = catchAsync(async (req, res) => {
+  const user = req.user as any;
+  const result = await commentService.replyCommentByTripIdFromDb(
+    user.id,
+    req.body,
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Comment replied successfully',
     data: result,
   });
 });
@@ -73,4 +90,5 @@ export const commentController = {
   getCommentById,
   updateComment,
   deleteComment,
+  replyCommentByTripId,
 };

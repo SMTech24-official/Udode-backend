@@ -19,7 +19,7 @@ const http_status_1 = __importDefault(require("http-status"));
 const createTerminalFeedIntoDb = (userId, terminalFeedData) => __awaiter(void 0, void 0, void 0, function* () {
     const { data, terminalFeedImage } = terminalFeedData;
     const result = yield prisma_1.default.terminalFeed.create({
-        data: Object.assign(Object.assign({}, data), { terminalFeedImage: terminalFeedImage, userId: userId })
+        data: Object.assign(Object.assign({}, data), { image: terminalFeedImage, userId: userId }),
     });
     if (!result) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'TerminalFeed not created');

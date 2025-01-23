@@ -28,12 +28,67 @@ const createTerminalIntoDb = async (userId: string, data: {
     return result;
   };
 
-const getTerminalListFromDb = async () => {
-  const result = await prisma.terminal.findMany();
-  if(result.length === 0){ 
+const getTerminalListFromDb = async (filters: {
+  rating?: number;
+  fareRange?: string;
+  search?: string;
+}) => {
+  const { rating, fareRange, search } = filters;
+
+  const whereClause: any = {};
+
+  if (fareRange) {
+    whereClause.fareRange = fareRange;
+  }
+
+  if (search) {
+    whereClause.OR = [
+      { terminalName: { contains: search, mode: 'insensitive' } },
+      { vendorName: { contains: search, mode: 'insensitive' } },
+      { location: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  let terminals = await prisma.terminal.findMany({
+    where: whereClause,
+    include: {
+      reviews: {
+        select: {
+          id: true,
+          rating: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              role: true,
+              image: true,
+            },
+          },
+        },
+      },
+    }
+  });
+
+  if (terminals.length === 0) {
     return { message: 'Terminal not found' };
   }
-  return result;
+
+  if (rating !== undefined) {
+    terminals = terminals.filter(terminal => {
+      if (terminal.reviews.length === 0) {
+        return false;
+      }
+      const averageRating = terminal.reviews.reduce((acc, review) => acc + review.rating, 0) / terminal.reviews.length;
+      return averageRating >= rating;
+    });
+    if (terminals.length === 0) {
+      return { message: 'No terminals found with the specified rating' };
+    }
+  }
+
+  return terminals;
 };
 
 
