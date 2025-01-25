@@ -5,6 +5,7 @@ const createSchema = z.object({
     terminalName: z.string(),
     fareRange: z.string(),
     vendorName: z.string(),
+    city: z.string(),
     location: z.string(),
     latitude: z.number(),
     longitude: z.number(),

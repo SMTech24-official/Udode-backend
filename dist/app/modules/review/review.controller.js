@@ -29,7 +29,7 @@ const createReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
 }));
 const getReviewList = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield review_service_1.reviewService.getReviewListFromDb();
+    const result = yield review_service_1.reviewService.getReviewListFromDb(req.params.terminalId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -39,7 +39,7 @@ const getReviewList = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 }));
 const getReviewById = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield review_service_1.reviewService.getReviewByIdFromDb(user.id, req.params.id);
+    const result = yield review_service_1.reviewService.getReviewByIdFromDb(user.id, req.params.reviewId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -59,7 +59,7 @@ const updateReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
 }));
 const deleteReview = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield review_service_1.reviewService.deleteReviewItemFromDb(user.id, req.params.id);
+    const result = yield review_service_1.reviewService.deleteReviewItemFromDb(user.id, req.params.reviewId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

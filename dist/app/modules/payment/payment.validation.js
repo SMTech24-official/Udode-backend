@@ -27,13 +27,17 @@ exports.TStripeSaveWithCustomerInfoPayloadSchema = zod_1.z.object({
 exports.AuthorizedPaymentPayloadSchema = zod_1.z.object({
     // customerId: z.string({ required_error: 'Customer ID is required' }),
     // amount: z.number({ required_error: 'Amount is required' }),
-    paymentMethodId: zod_1.z.string({
-        required_error: 'Payment Method ID is required',
+    body: zod_1.z.object({
+        paymentMethodId: zod_1.z.string({
+            required_error: 'Payment Method ID is required',
+        }),
+        parcelId: zod_1.z.string({ required_error: 'Parcel ID is required' }),
     }),
-    parcelId: zod_1.z.string({ required_error: 'project ID is required' }),
 });
 exports.capturedPaymentPayloadSchema = zod_1.z.object({
-    parcelId: zod_1.z.string({ required_error: 'project ID is required' }),
+    body: zod_1.z.object({
+        parcelId: zod_1.z.string({ required_error: 'project ID is required' }),
+    }),
 });
 exports.saveNewCardWithExistingCustomerPayloadSchema = zod_1.z.object({
     body: zod_1.z.object({

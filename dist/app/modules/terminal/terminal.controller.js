@@ -29,7 +29,13 @@ const createTerminal = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
 }));
 const getTerminalList = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield terminal_service_1.terminalService.getTerminalListFromDb();
+    const { rating, fareRange, search } = req.query;
+    const filters = {
+        rating: rating ? Number(rating) : undefined,
+        fareRange: fareRange,
+        search: search,
+    };
+    const result = yield terminal_service_1.terminalService.getTerminalListFromDb(filters);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,

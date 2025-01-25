@@ -13,7 +13,6 @@ router.post(
   commentController.createComment,
 );
 
-router.get('/:tripId', auth(), commentController.getCommentList);
 
 router.post(
   '/reply',
@@ -21,6 +20,8 @@ router.post(
   auth(),
   commentController.replyCommentByTripId,
 );
+
+router.get('/:tripId', auth(), commentController.getCommentList);
 
 router.put(
   '/:commentId',

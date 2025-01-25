@@ -88,13 +88,14 @@ const authorizedPaymentWithSaveCardFromStripe = (userId, payload) => __awaiter(v
             paymentStatus: client_1.PaymentStatus.PENDING,
         },
     });
+    console.log(parcel);
     if (!parcel) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'project not found');
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Parcel not found');
     }
     if (!parcel.deliveryPersonId) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Delivery person ID not found');
     }
-    const deliveryParson = yield prisma_1.default.user.findUnique({
+    const deliveryPerson = yield prisma_1.default.user.findUnique({
         where: {
             id: parcel.deliveryPersonId,
         },
@@ -102,7 +103,7 @@ const authorizedPaymentWithSaveCardFromStripe = (userId, payload) => __awaiter(v
             stripeCustomerId: true,
         },
     });
-    if (!deliveryParson) {
+    if (!deliveryPerson) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Delivery person not found');
     }
     let customerId = customerDetails.senderCustomerID;
@@ -141,11 +142,15 @@ const authorizedPaymentWithSaveCardFromStripe = (userId, payload) => __awaiter(v
         });
         customerId = stripeCustomer.id; // Use the new customerId
     }
+    const transportPriceInKobo = Math.round(parcel.parcelTransportPrice * 100); // Convert to Kobo
+    if (transportPriceInKobo < 25000) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Minimum amount to be paid is 250');
+    }
     // Calculate the amount to be transferred to the delivery person (65% of the total price)
     const transferAmount = Math.round(parcel.parcelTransportPrice * 0.65 * 100);
     // Create a PaymentIntent with the specified PaymentMethod
     const paymentIntent = yield stripe.paymentIntents.create({
-        amount: parcel.parcelTransportPrice * 100,
+        amount: transportPriceInKobo,
         currency: 'ngn',
         customer: customerId,
         payment_method: paymentMethodId,
@@ -156,7 +161,7 @@ const authorizedPaymentWithSaveCardFromStripe = (userId, payload) => __awaiter(v
         },
         capture_method: 'manual',
         transfer_data: {
-            destination: customerDetails.stripeCustomerId,
+            destination: deliveryPerson.stripeCustomerId,
             amount: transferAmount,
         },
         automatic_payment_methods: {
@@ -170,8 +175,8 @@ const authorizedPaymentWithSaveCardFromStripe = (userId, payload) => __awaiter(v
         const payment = yield prisma_1.default.payment.create({
             data: {
                 paymentId: paymentIntent.id,
-                stripeAccountIdReceiver: customerDetails.stripeCustomerId,
-                paymentAmount: parcel.parcelTransportPrice,
+                stripeAccountIdReceiver: deliveryPerson.stripeCustomerId,
+                paymentAmount: paymentIntent.amount,
                 paymentDate: new Date(),
                 parcelId: parcelId,
                 status: client_1.PaymentStatus.REQUIRES_CAPTURE,
@@ -218,13 +223,30 @@ const capturePaymentRequestToStripe = (payload) => __awaiter(void 0, void 0, voi
     }
     const payment = yield prisma_1.default.payment.findUnique({
         where: { parcelId: parcelId },
-        select: { paymentId: true },
+        select: { paymentId: true,
+            paymentAmount: true,
+            stripeAccountIdReceiver: true,
+        },
     });
     if (!payment) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Payment not found');
     }
     // Capture the authorized payment using the PaymentIntent ID
     const paymentIntent = yield stripe.paymentIntents.capture(payment.paymentId);
+    if (paymentIntent.status !== 'succeeded') {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Payment not captured');
+    }
+    const transfer = yield stripe.transfers.create({
+        amount: payment.paymentAmount, // Amount in the smallest currency unit (e.g., cents for USD)
+        currency: 'ngn', // Currency of the connected account
+        destination: payment.stripeAccountIdReceiver, // Connected account ID
+        metadata: {
+            parcelId: parcelId, // Include parcel or order-related metadata
+        },
+    });
+    if (!transfer) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Transfer not created');
+    }
     const paymentStatus = yield prisma_1.default.payment.update({
         where: { parcelId: parcelId },
         data: {

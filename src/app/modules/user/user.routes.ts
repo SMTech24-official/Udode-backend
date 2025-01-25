@@ -17,6 +17,8 @@ router.get('/', UserControllers.getAllUsers);
 
 router.get('/me', auth(), UserControllers.getMyProfile);
 
+router.get('/earnings', auth(), UserControllers.getEarnings);
+
 router.get('/:id', UserControllers.getUserDetails);
 
 router.put('/update-profile', auth(), UserControllers.updateMyProfile);
@@ -57,11 +59,19 @@ router.post(
   UserControllers.socialLogin,
 );
 
+router.post(
+  '/withdraw',
+  auth(),
+  UserControllers.withdrawBalance,
+);
+
 router.put(
   '/update-profile-image',
   multerUpload.single('profileImage'),
   auth(),
   UserControllers.updateProfileImage,
 );
+
+
 
 export const UserRouters = router;

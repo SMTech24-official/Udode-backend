@@ -69,6 +69,16 @@ const getParcelListByUser = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: result,
     });
 }));
+const getParcelListToPickup = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = req.user;
+    const result = yield parcel_service_1.parcelService.getParcelListToPickupFromDb(user.id);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'Parcel list retrieved successfully',
+        data: result,
+    });
+}));
 const updateParcel = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const parcelId = req.params.parcelId;
     const user = req.user;
@@ -87,6 +97,18 @@ const updateParcel = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
         data: result,
     });
 }));
+const updateParcelToPickup = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.parcelId;
+    const user = req.user;
+    const data = req.body;
+    const result = yield parcel_service_1.parcelService.updateParcelToPickupIntoDb(user.id, parcelId, data);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'Parcel updated successfully',
+        data: result,
+    });
+}));
 const deleteParcel = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
     const result = yield parcel_service_1.parcelService.deleteParcelItemFromDb(user.id, req.params.parcelId);
@@ -97,6 +119,18 @@ const deleteParcel = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
         data: result,
     });
 }));
+const updateParcelToAccept = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.parcelId;
+    const user = req.user;
+    const data = req.body;
+    const result = yield parcel_service_1.parcelService.updateParcelToAcceptIntoDb(user.id, parcelId, data);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'Parcel updated successfully',
+        data: result,
+    });
+}));
 exports.parcelController = {
     createParcel,
     getParcelList,
@@ -104,4 +138,7 @@ exports.parcelController = {
     updateParcel,
     deleteParcel,
     getParcelListByUser,
+    getParcelListToPickup,
+    updateParcelToPickup,
+    updateParcelToAccept,
 };

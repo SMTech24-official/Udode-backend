@@ -10,9 +10,9 @@ const validateRequest_1 = __importDefault(require("../../middlewares/validateReq
 const review_controller_1 = require("./review.controller");
 const review_validation_1 = require("./review.validation");
 const router = express_1.default.Router();
-router.post('/', (0, auth_1.default)(), (0, validateRequest_1.default)(review_validation_1.reviewValidation.createSchema), review_controller_1.reviewController.createReview);
-router.get('/', (0, auth_1.default)(), review_controller_1.reviewController.getReviewList);
-router.get('/:reviewId', (0, auth_1.default)(), review_controller_1.reviewController.getReviewById);
-router.put('/:reviewId', (0, auth_1.default)(), (0, validateRequest_1.default)(review_validation_1.reviewValidation.updateSchema), review_controller_1.reviewController.updateReview);
+router.post('/', (0, validateRequest_1.default)(review_validation_1.reviewValidation.createSchema), (0, auth_1.default)(), review_controller_1.reviewController.createReview);
+router.get('/:terminalId', (0, auth_1.default)(), review_controller_1.reviewController.getReviewList);
+router.get('/single/:reviewId', (0, auth_1.default)(), review_controller_1.reviewController.getReviewById);
+router.put('/:reviewId', (0, validateRequest_1.default)(review_validation_1.reviewValidation.updateSchema), (0, auth_1.default)(), review_controller_1.reviewController.updateReview);
 router.delete('/:reviewId', (0, auth_1.default)(), review_controller_1.reviewController.deleteReview);
 exports.reviewRoutes = router;

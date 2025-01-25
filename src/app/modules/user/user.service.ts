@@ -7,10 +7,15 @@ import config from '../../../config';
 import { Secret } from 'jsonwebtoken';
 import { generateToken } from '../../utils/generateToken';
 import emailSender from '../../utils/emailSender';
+import Stripe from 'stripe';
 
 interface UserWithOptionalPassword extends Omit<User, 'password'> {
   password?: string;
 }
+
+const stripe = new Stripe(config.stripe.stripe_secret_key as string, {
+  apiVersion: '2024-12-18.acacia',
+});
 
 const registerUserIntoDB = async (payload: any) => {
   if (payload.email) {
@@ -528,6 +533,93 @@ const updateProfileImageIntoDB = async (
 };
 
 
+const getEarningsFromDB = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      stripeCustomerId: true,
+    }
+  });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  if (user.stripeCustomerId) {
+    const balance = await stripe.balance.retrieve({
+      stripeAccount: user.stripeCustomerId,
+    });
+
+    return balance;
+  }
+
+  return user;
+};
+
+
+const withdrawBalanceFromDB = async (userId: string, data: {
+  amount: number;
+}) => {
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      stripeCustomerId: true, // Use the connected account ID
+    },
+  });
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  if (!user.stripeCustomerId) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'User does not have a connected Stripe account!',
+    );
+  }
+
+  // Validate the amount (Stripe requires the smallest currency unit, e.g., cents for USD)
+   const validAmount = Number(data.amount);
+   if (isNaN(validAmount)) {
+     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid amount provided!');
+   }
+   const transportPriceInKobo = Math.round(validAmount * 100); // Convert to Kobo
+
+   console.log(transportPriceInKobo);
+   if (transportPriceInKobo < 25000) {
+     throw new AppError(
+       httpStatus.BAD_REQUEST,
+       'Minimum amount to be paid is 250',
+     );
+   }
+
+  // Create a payout to the connected account's bank account
+ 
+    const payout = await stripe.payouts.create(
+      {
+        amount: transportPriceInKobo, // Amount in cents (e.g., $10.00 = 1000)
+        currency: 'ngn', // Ensure currency matches the connected account's balance
+        method: 'instant', // Optional: 'instant' for faster payouts, incurs fees
+      },
+      {
+        stripeAccount: user.stripeCustomerId, // Connected account ID
+      },
+    );
+    if (!payout) {
+      throw new AppError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Payout failed!',
+      );
+    }
+
+    return { message: 'Amount transferred successfully!', payout };
+  
+};
+
+
 export const UserServices = {
   registerUserIntoDB,
   getAllUsersFromDB,
@@ -543,4 +635,6 @@ export const UserServices = {
   updatePasswordIntoDb,
   resendOtpIntoDB,
   updateProfileImageIntoDB,
+  getEarningsFromDB,
+  withdrawBalanceFromDB,
 };

@@ -24,7 +24,13 @@ const updateSchema = zod_1.z.object({
         endDateTime: zod_1.z.string().optional(),
     }),
 });
+const parcelStatus = zod_1.z.object({
+    body: zod_1.z.object({
+        parcelStatus: zod_1.z.enum(['PENDING', 'ACCEPTED', 'DELIVERED', 'CANCELLED']),
+    }),
+});
 exports.parcelValidation = {
     createSchema,
     updateSchema,
+    parcelStatus,
 };

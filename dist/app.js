@@ -8,6 +8,7 @@ const express_1 = __importDefault(require("express"));
 const http_status_1 = __importDefault(require("http-status"));
 const globalErrorHandler_1 = __importDefault(require("./app/middlewares/globalErrorHandler"));
 const routes_1 = __importDefault(require("./app/routes"));
+const payment_controller_1 = require("./app/modules/payment/payment.controller");
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({
     origin: [
@@ -16,6 +17,7 @@ app.use((0, cors_1.default)({
     ],
     credentials: true,
 }));
+app.use('/api/v1/stripe/payment-webhook', express_1.default.raw({ type: 'application/json' }), payment_controller_1.PaymentController.handleWebHook);
 //parser
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));

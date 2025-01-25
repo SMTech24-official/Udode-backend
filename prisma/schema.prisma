@@ -53,6 +53,7 @@ model Terminal {
   terminalName       String
   fareRange          String
   vendorName         String
+  city               String
   location           String
   latitude           Float
   longitude          Float
@@ -218,7 +219,7 @@ model Parcel {
 
   senderPerson   User      @relation("SenderPersonRelation", fields: [userId], references: [id])
   deliveryPerson User?     @relation("DeliveryPersonRelation", fields: [deliveryPersonId], references: [id])
-  payments       Payment[]
+  payment       Payment[]
 
   @@map("parcels")
 }

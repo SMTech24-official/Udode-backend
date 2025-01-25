@@ -23,9 +23,16 @@ router.get('/', auth(), parcelController.getParcelList);
 
 router.get(
     '/user-parcels',
-    auth(),
+    auth(UserRoleEnum.USER),
     parcelController.getParcelListByUser,
 )
+
+router.get(
+  '/pickup-parcels',
+  auth(UserRoleEnum.USER),
+  parcelController.getParcelListToPickup,
+);
+
 router.get('/:parcelId', auth(), parcelController.getParcelById);
 
 
@@ -36,6 +43,19 @@ router.put(
   auth(),
   validateRequest(parcelValidation.updateSchema),
   parcelController.updateParcel,
+);
+router.put(
+  '/accept-parcel/:parcelId',
+  auth(),
+  validateRequest(parcelValidation.parcelStatus),
+  parcelController.updateParcelToAccept,
+);
+
+router.put(
+  '/pickup-parcel/:parcelId',
+  auth(),
+  validateRequest(parcelValidation.parcelStatus),
+  parcelController.updateParcelToPickup,
 );
 
 router.delete('/:parcelId', auth(), parcelController.deleteParcel);

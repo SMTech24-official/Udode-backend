@@ -65,6 +65,18 @@ const getParcelListByUser = catchAsync(async (req, res) => {
   });
 });
 
+const getParcelListToPickup = catchAsync(async (req, res) => {
+  const user = req.user as any;
+  const result = await parcelService.getParcelListToPickupFromDb(user.id);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Parcel list retrieved successfully',
+    data: result,
+  });
+});
+
+
 const updateParcel = catchAsync(async (req, res) => {
   const parcelId = req.params.parcelId;
   const user = req.user as any;
@@ -92,6 +104,24 @@ const updateParcel = catchAsync(async (req, res) => {
   });
 });
 
+const updateParcelToPickup = catchAsync(async (req, res) => {
+  const parcelId = req.params.parcelId;
+  const user = req.user as any;
+  const data = req.body;
+  const result = await parcelService.updateParcelToPickupIntoDb(
+    user.id,
+    parcelId,
+    data,
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Parcel updated successfully',
+    data: result,
+  });
+});
+
+
 const deleteParcel = catchAsync(async (req, res) => {
   const user = req.user as any;
   const result = await parcelService.deleteParcelItemFromDb(
@@ -106,6 +136,22 @@ const deleteParcel = catchAsync(async (req, res) => {
   });
 });
 
+const updateParcelToAccept = catchAsync(async (req, res) => {
+  const parcelId = req.params.parcelId;
+  const user = req.user as any;
+  const data = req.body;
+  const result = await parcelService.updateParcelToAcceptIntoDb(
+    user.id,
+    parcelId,
+    data,
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Parcel updated successfully',
+    data: result,
+  });
+});
 export const parcelController = {
   createParcel,
   getParcelList,
@@ -113,4 +159,7 @@ export const parcelController = {
   updateParcel,
   deleteParcel,
   getParcelListByUser,
+  getParcelListToPickup,
+  updateParcelToPickup,
+  updateParcelToAccept,
 };

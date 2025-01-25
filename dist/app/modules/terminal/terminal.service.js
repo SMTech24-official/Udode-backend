@@ -25,12 +25,56 @@ const createTerminalIntoDb = (userId, data) => __awaiter(void 0, void 0, void 0,
     }
     return result;
 });
-const getTerminalListFromDb = () => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield prisma_1.default.terminal.findMany();
-    if (result.length === 0) {
+const getTerminalListFromDb = (filters) => __awaiter(void 0, void 0, void 0, function* () {
+    const { rating, fareRange, search } = filters;
+    const whereClause = {};
+    if (fareRange) {
+        whereClause.fareRange = fareRange;
+    }
+    if (search) {
+        whereClause.OR = [
+            { terminalName: { contains: search, mode: 'insensitive' } },
+            { vendorName: { contains: search, mode: 'insensitive' } },
+            { location: { contains: search, mode: 'insensitive' } },
+        ];
+    }
+    let terminals = yield prisma_1.default.terminal.findMany({
+        where: whereClause,
+        include: {
+            reviews: {
+                select: {
+                    id: true,
+                    rating: true,
+                    createdAt: true,
+                    user: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            email: true,
+                            role: true,
+                            image: true,
+                        },
+                    },
+                },
+            },
+        }
+    });
+    if (terminals.length === 0) {
         return { message: 'Terminal not found' };
     }
-    return result;
+    if (rating !== undefined) {
+        terminals = terminals.filter(terminal => {
+            if (terminal.reviews.length === 0) {
+                return false;
+            }
+            const averageRating = terminal.reviews.reduce((acc, review) => acc + review.rating, 0) / terminal.reviews.length;
+            return averageRating >= rating;
+        });
+        if (terminals.length === 0) {
+            return { message: 'No terminals found with the specified rating' };
+        }
+    }
+    return terminals;
 });
 const getTerminalByIdFromDb = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield prisma_1.default.terminal.findUnique({ where: { id } });

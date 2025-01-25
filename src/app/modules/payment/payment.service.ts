@@ -94,15 +94,17 @@ const authorizedPaymentWithSaveCardFromStripe = async (
     },
   });
 
+  console.log(parcel);
+
   if (!parcel) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'project not found');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Parcel not found');
   }
 
   if (!parcel.deliveryPersonId) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Delivery person ID not found');
   }
 
-  const deliveryParson = await prisma.user.findUnique({
+  const deliveryPerson = await prisma.user.findUnique({
     where: {
       id: parcel.deliveryPersonId,
     },
@@ -111,7 +113,7 @@ const authorizedPaymentWithSaveCardFromStripe = async (
     },
   });
 
-  if (!deliveryParson) {
+  if (!deliveryPerson) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Delivery person not found');
   }
 
@@ -159,12 +161,17 @@ const authorizedPaymentWithSaveCardFromStripe = async (
     customerId = stripeCustomer.id; // Use the new customerId
   }
 
+  const transportPriceInKobo = Math.round(parcel.parcelTransportPrice * 100); // Convert to Kobo
+
+  if(transportPriceInKobo < 25000){
+    throw new AppError(httpStatus.BAD_REQUEST, 'Minimum amount to be paid is 250');
+  }
   // Calculate the amount to be transferred to the delivery person (65% of the total price)
   const transferAmount = Math.round(parcel.parcelTransportPrice * 0.65 * 100);
 
   // Create a PaymentIntent with the specified PaymentMethod
   const paymentIntent = await stripe.paymentIntents.create({
-    amount: parcel.parcelTransportPrice * 100,
+    amount: transportPriceInKobo,
     currency: 'ngn',
     customer: customerId,
     payment_method: paymentMethodId,
@@ -175,7 +182,7 @@ const authorizedPaymentWithSaveCardFromStripe = async (
     },
     capture_method: 'manual',
     transfer_data: {
-      destination: customerDetails.stripeCustomerId as string,
+      destination: deliveryPerson.stripeCustomerId as string,
       amount: transferAmount,
     },
     automatic_payment_methods: {
@@ -190,8 +197,8 @@ const authorizedPaymentWithSaveCardFromStripe = async (
     const payment = await prisma.payment.create({
       data: {
         paymentId: paymentIntent.id,
-        stripeAccountIdReceiver: customerDetails.stripeCustomerId as string,
-        paymentAmount: parcel.parcelTransportPrice,
+        stripeAccountIdReceiver: deliveryPerson.stripeCustomerId as string,
+        paymentAmount: paymentIntent.amount,
         paymentDate: new Date(),
         parcelId: parcelId,
         status: PaymentStatus.REQUIRES_CAPTURE,
@@ -253,7 +260,10 @@ const capturePaymentRequestToStripe = async (payload: { parcelId: string }) => {
 
   const payment = await prisma.payment.findUnique({
     where: { parcelId: parcelId },
-    select: { paymentId: true },
+    select: { paymentId: true,
+      paymentAmount: true,
+      stripeAccountIdReceiver: true,
+     },
   });
   if (!payment) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Payment not found');
@@ -261,6 +271,21 @@ const capturePaymentRequestToStripe = async (payload: { parcelId: string }) => {
 
   // Capture the authorized payment using the PaymentIntent ID
   const paymentIntent = await stripe.paymentIntents.capture(payment.paymentId);
+  if (paymentIntent.status !== 'succeeded') {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Payment not captured');
+  }
+
+  const transfer = await stripe.transfers.create({
+    amount: payment.paymentAmount, // Amount in the smallest currency unit (e.g., cents for USD)
+    currency: 'ngn', // Currency of the connected account
+    destination: payment.stripeAccountIdReceiver, // Connected account ID
+    metadata: {
+      parcelId: parcelId, // Include parcel or order-related metadata
+    },
+  });
+  if(!transfer){
+    throw new AppError(httpStatus.BAD_REQUEST, 'Transfer not created');
+  }
 
   const paymentStatus = await prisma.payment.update({
     where: { parcelId: parcelId },

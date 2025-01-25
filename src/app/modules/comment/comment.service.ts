@@ -4,6 +4,25 @@ import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
 
 
+// type CommentWithReplies = {
+//   id: string;
+//   userId: string;
+//   tripId: string;
+//   parentId: string | null;
+//   comment: string;
+//   createdAt: Date;
+//   updatedAt: Date;
+//   user: {
+//     id: string;
+//     fullName: string;
+//     image: string | null;
+//     role: string;
+//   };
+//   replies: CommentWithReplies[]; // This will hold nested replies
+// };
+
+
+
 type CommentWithReplies = {
   id: string;
   userId: string;
@@ -27,7 +46,8 @@ type CommentWithReplies = {
 const createCommentIntoDb = async (userId: string, data: any) => {
   const result = await prisma.comment.create({
     data: {
-      ...data,
+      tripId: data.tripId,
+      comment: data.comment,
       userId: userId,
       parentId: data.parentId || null, // Ensure parentId is null if not provided
     },
@@ -112,6 +132,74 @@ const getCommentListFromDb = async (
     ...comment,
     replies: (comment as CommentWithReplies).replies || [],
   }));
+};
+
+const getCommentsByTripId = async (
+  tripId: string,
+): Promise<CommentWithReplies[]> => {
+  // Step 1: Fetch all comments for the trip
+  const comments = await prisma.comment.findMany({
+    where: { tripId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          image: true,
+          role: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'asc', // Sort comments by creation time
+    },
+  });
+
+  // Step 2: Prepare comment map and top-level comments
+  const commentMap: Record<string, CommentWithReplies> = {};
+  const topLevelComments: CommentWithReplies[] = [];
+
+  comments.forEach(comment => {
+    const commentWithReplies: CommentWithReplies = {
+      ...comment,
+      replies: [], // Initialize replies
+      user: comment.user,
+    };
+
+    commentMap[comment.id] = commentWithReplies;
+
+    if (!comment.parentId) {
+      // Add top-level comments to the result array
+      topLevelComments.push(commentWithReplies);
+    }
+  });
+
+  // Step 3: Link all replies to their parent comments
+  comments.forEach(comment => {
+    if (comment.parentId && commentMap[comment.parentId]) {
+      commentMap[comment.parentId].replies.push(commentMap[comment.id]);
+    }
+  });
+
+  // Step 4: Flatten nested replies into a single level for each top-level comment
+  topLevelComments.forEach(topLevelComment => {
+    const allReplies: CommentWithReplies[] = [];
+
+    // Helper function to collect all nested replies
+    const collectReplies = (replies: CommentWithReplies[]) => {
+      replies.forEach(reply => {
+        allReplies.push(reply); // Add the reply
+        if (reply.replies.length > 0) {
+          collectReplies(reply.replies); // Recursively collect nested replies
+        }
+      });
+    };
+
+    collectReplies(topLevelComment.replies); // Flatten replies for this top-level comment
+    topLevelComment.replies = allReplies; // Assign flattened replies
+  });
+
+  return topLevelComments;
 };
 
 
@@ -209,4 +297,5 @@ export const commentService = {
   updateCommentIntoDb,
   deleteCommentItemFromDb,
   replyCommentByTripIdFromDb,
+  getCommentsByTripId,
 };

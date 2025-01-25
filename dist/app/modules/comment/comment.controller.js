@@ -29,7 +29,7 @@ const createComment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 }));
 const getCommentList = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield comment_service_1.commentService.getCommentListFromDb();
+    const result = yield comment_service_1.commentService.getCommentListFromDb(req.params.tripId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -39,7 +39,7 @@ const getCommentList = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
 }));
 const getCommentById = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield comment_service_1.commentService.getCommentByIdFromDb(req.params.tripId);
+    const result = yield comment_service_1.commentService.getCommentByIdFromDb(req.params.commentId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -59,11 +59,21 @@ const updateComment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 }));
 const deleteComment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield comment_service_1.commentService.deleteCommentItemFromDb(user.id, req.params.tripId);
+    const result = yield comment_service_1.commentService.deleteCommentItemFromDb(user.id, req.params.commentId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
-        message: 'Comment deleted successfully',
+        message: 'Comment and replies deleted successfully',
+        data: result,
+    });
+}));
+const replyCommentByTripId = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = req.user;
+    const result = yield comment_service_1.commentService.replyCommentByTripIdFromDb(user.id, req.body);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'Comment replied successfully',
         data: result,
     });
 }));
@@ -73,4 +83,5 @@ exports.commentController = {
     getCommentById,
     updateComment,
     deleteComment,
+    replyCommentByTripId,
 };

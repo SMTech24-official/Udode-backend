@@ -168,6 +168,28 @@ const updateProfileImage = catchAsync(async (req, res) => {
   });
 });
 
+const getEarnings = catchAsync(async (req, res) => {
+  const user = req.user as any;
+  const result = await UserServices.getEarningsFromDB(user.id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Earnings retrieved successfully',
+    data: result,
+  });
+});
+
+const withdrawBalance = catchAsync(async (req, res) => {
+  const user = req.user as any;
+  const result = await UserServices.withdrawBalanceFromDB(user.id, req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'Withdraw request submitted successfully',
+    data: result,
+  });
+});
+
 export const UserControllers = {
   registerUser,
   getAllUsers,
@@ -183,4 +205,6 @@ export const UserControllers = {
   resendOtp,
   updateProfileImage,
   updateMyProfile,
+  getEarnings,
+  withdrawBalance,
 };

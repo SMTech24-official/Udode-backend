@@ -18,15 +18,30 @@ const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
 const createReviewIntoDb = (userId, data) => __awaiter(void 0, void 0, void 0, function* () {
     const result = yield prisma_1.default.review.create({
-        data: Object.assign(Object.assign({}, data), { userId: userId })
+        data: Object.assign(Object.assign({}, data), { userId: userId }),
     });
     if (!result) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Review not created');
     }
     return result;
 });
-const getReviewListFromDb = () => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield prisma_1.default.review.findMany();
+const getReviewListFromDb = (terminalId) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield prisma_1.default.review.findMany({
+        where: {
+            terminalId: terminalId,
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    role: true,
+                    image: true,
+                },
+            },
+        },
+    });
     if (result.length === 0) {
         return { message: 'Review not found' };
     }
@@ -36,7 +51,7 @@ const getReviewByIdFromDb = (userId, reviewId) => __awaiter(void 0, void 0, void
     const result = yield prisma_1.default.review.findUnique({
         where: {
             id: reviewId,
-        }
+        },
     });
     if (!result) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Review not found');
@@ -44,17 +59,20 @@ const getReviewByIdFromDb = (userId, reviewId) => __awaiter(void 0, void 0, void
     return result;
 });
 const updateReviewIntoDb = (userId, reviewId, data) => __awaiter(void 0, void 0, void 0, function* () {
-    const transaction = yield prisma_1.default.$transaction((prisma) => __awaiter(void 0, void 0, void 0, function* () {
-        const result = yield prisma.review.update({
-            where: {
-                id: reviewId,
-                userId: userId,
-            },
-            data: Object.assign({}, data),
-        });
-        return result;
-    }));
-    return transaction;
+    const result = yield prisma_1.default.review.update({
+        where: {
+            id: reviewId,
+            userId: userId,
+        },
+        data: {
+            comment: data.comment,
+            rating: data.rating,
+        },
+    });
+    if (!result) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Review not updated');
+    }
+    return result;
 });
 const deleteReviewItemFromDb = (userId, reviewId) => __awaiter(void 0, void 0, void 0, function* () {
     const deletedItem = yield prisma_1.default.review.delete({
@@ -63,6 +81,9 @@ const deleteReviewItemFromDb = (userId, reviewId) => __awaiter(void 0, void 0, v
             userId: userId,
         },
     });
+    if (!deletedItem) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Review not deleted');
+    }
     return deletedItem;
 });
 exports.reviewService = {

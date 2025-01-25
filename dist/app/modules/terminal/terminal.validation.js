@@ -7,6 +7,7 @@ const createSchema = zod_1.z.object({
         terminalName: zod_1.z.string(),
         fareRange: zod_1.z.string(),
         vendorName: zod_1.z.string(),
+        city: zod_1.z.string(),
         location: zod_1.z.string(),
         latitude: zod_1.z.number(),
         longitude: zod_1.z.number(),

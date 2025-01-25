@@ -149,6 +149,24 @@ const updateProfileImage = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         data: result,
     });
 }));
+const getEarnings = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = req.user;
+    const result = yield user_service_1.UserServices.getEarningsFromDB(user.id);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        message: 'Earnings retrieved successfully',
+        data: result,
+    });
+}));
+const withdrawBalance = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = req.user;
+    const result = yield user_service_1.UserServices.withdrawBalanceFromDB(user.id, req.body);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        message: 'Withdraw request submitted successfully',
+        data: result,
+    });
+}));
 exports.UserControllers = {
     registerUser,
     getAllUsers,
@@ -164,4 +182,6 @@ exports.UserControllers = {
     resendOtp,
     updateProfileImage,
     updateMyProfile,
+    getEarnings,
+    withdrawBalance,
 };

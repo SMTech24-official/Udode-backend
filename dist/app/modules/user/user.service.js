@@ -44,6 +44,10 @@ const http_status_1 = __importDefault(require("http-status"));
 const config_1 = __importDefault(require("../../../config"));
 const generateToken_1 = require("../../utils/generateToken");
 const emailSender_1 = __importDefault(require("../../utils/emailSender"));
+const stripe_1 = __importDefault(require("stripe"));
+const stripe = new stripe_1.default(config_1.default.stripe.stripe_secret_key, {
+    apiVersion: '2024-12-18.acacia',
+});
 const registerUserIntoDB = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     if (payload.email) {
         const existingUser = yield prisma_1.default.user.findUnique({
@@ -454,6 +458,62 @@ const updateProfileImageIntoDB = (userId, profileImageUrl) => __awaiter(void 0, 
     }
     return updatedUser;
 });
+const getEarningsFromDB = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield prisma_1.default.user.findUnique({
+        where: { id: userId },
+        select: {
+            id: true,
+            stripeCustomerId: true,
+        }
+    });
+    if (!user) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'User not found!');
+    }
+    if (user.stripeCustomerId) {
+        const balance = yield stripe.balance.retrieve({
+            stripeAccount: user.stripeCustomerId,
+        });
+        return balance;
+    }
+    return user;
+});
+const withdrawBalanceFromDB = (userId, data) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield prisma_1.default.user.findUnique({
+        where: { id: userId },
+        select: {
+            id: true,
+            stripeCustomerId: true, // Use the connected account ID
+        },
+    });
+    if (!user) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'User not found!');
+    }
+    if (!user.stripeCustomerId) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'User does not have a connected Stripe account!');
+    }
+    // Validate the amount (Stripe requires the smallest currency unit, e.g., cents for USD)
+    const validAmount = Number(data.amount);
+    if (isNaN(validAmount)) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Invalid amount provided!');
+    }
+    const transportPriceInKobo = Math.round(validAmount * 100); // Convert to Kobo
+    console.log(transportPriceInKobo);
+    if (transportPriceInKobo < 25000) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Minimum amount to be paid is 250');
+    }
+    // Create a payout to the connected account's bank account
+    const payout = yield stripe.payouts.create({
+        amount: transportPriceInKobo, // Amount in cents (e.g., $10.00 = 1000)
+        currency: 'ngn', // Ensure currency matches the connected account's balance
+        method: 'instant', // Optional: 'instant' for faster payouts, incurs fees
+    }, {
+        stripeAccount: user.stripeCustomerId, // Connected account ID
+    });
+    if (!payout) {
+        throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Payout failed!');
+    }
+    return { message: 'Amount transferred successfully!', payout };
+});
 exports.UserServices = {
     registerUserIntoDB,
     getAllUsersFromDB,
@@ -469,4 +529,6 @@ exports.UserServices = {
     updatePasswordIntoDb,
     resendOtpIntoDB,
     updateProfileImageIntoDB,
+    getEarningsFromDB,
+    withdrawBalanceFromDB,
 };

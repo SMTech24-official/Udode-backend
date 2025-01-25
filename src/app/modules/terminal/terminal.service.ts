@@ -8,6 +8,7 @@ const createTerminalIntoDb = async (userId: string, data: {
     terminalName: string;
     fareRange: string;
     vendorName: string;
+    city: string;
     location: string;
     latitude: number;
     longitude: number;
