@@ -25,17 +25,15 @@ const stripe = new stripe_1.default(config_1.default.stripe.stripe_secret_key, {
     apiVersion: '2024-12-18.acacia',
 });
 // Step 1: Create a Customer and Save the Card
-const saveCardWithCustomerInfoIntoStripe = (payload, userId) => __awaiter(void 0, void 0, void 0, function* () {
+const saveCardWithCustomerInfoIntoStripe = (payload, user) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { user, paymentMethodId, address } = payload;
+        const { paymentMethodId, } = payload;
         // Create a new Stripe customer
         const customer = yield stripe.customers.create({
             name: user.name,
             email: user.email,
             address: {
-                city: address.city,
-                postal_code: address.postal_code,
-                country: address.country,
+                city: user.city
             },
         });
         // Attach PaymentMethod to the Customer
@@ -48,15 +46,21 @@ const saveCardWithCustomerInfoIntoStripe = (payload, userId) => __awaiter(void 0
                 default_payment_method: paymentMethodId,
             },
         });
-        // update profile with customerId
-        yield prisma_1.default.user.update({
+        const customerId = yield prisma_1.default.user.findUnique({
             where: {
-                id: userId,
-            },
-            data: {
-                senderCustomerID: customer.id,
+                id: user.id,
             },
         });
+        if (!(customerId === null || customerId === void 0 ? void 0 : customerId.senderCustomerID)) {
+            yield prisma_1.default.user.update({
+                where: {
+                    id: user.id,
+                },
+                data: {
+                    senderCustomerID: customer.id,
+                },
+            });
+        }
         return {
             customerId: customer.id,
             paymentMethodId: paymentMethodId,
@@ -291,11 +295,18 @@ const saveNewCardWithExistingCustomerIntoStripe = (payload) => __awaiter(void 0,
         throw new AppError_1.default(http_status_1.default.CONFLICT, error.message);
     }
 });
-const getCustomerSavedCardsFromStripe = (customerId) => __awaiter(void 0, void 0, void 0, function* () {
+const getCustomerSavedCardsFromStripe = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const userData = yield prisma_1.default.user.findUnique({
+            where: { id: userId },
+        });
+        // Retrieve the customer details from Stripe
+        if (!userData || !userData.senderCustomerID) {
+            return { message: 'User data or customer ID not found' };
+        }
         // List all payment methods for the customer
         const paymentMethods = yield stripe.paymentMethods.list({
-            customer: customerId,
+            customer: userData.senderCustomerID,
             type: 'card',
         });
         return { paymentMethods: paymentMethods.data };
@@ -348,10 +359,17 @@ const createPaymentIntentService = (payload) => __awaiter(void 0, void 0, void 0
         dpmCheckerLink: `https://dashboard.stripe.com/settings/payment_methods/review?transaction_id=${paymentIntent.id}`,
     };
 });
-const getCustomerDetailsFromStripe = (customerId) => __awaiter(void 0, void 0, void 0, function* () {
+const getCustomerDetailsFromStripe = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const userData = yield prisma_1.default.user.findUnique({
+            where: { id: userId },
+        });
         // Retrieve the customer details from Stripe
-        const customer = yield stripe.customers.retrieve(customerId);
+        if (!userData || !userData.senderCustomerID) {
+            return { 'message': 'User data or customer ID not found' };
+            ;
+        }
+        const customer = yield stripe.customers.retrieve(userData.senderCustomerID);
         return customer;
     }
     catch (error) {

@@ -203,10 +203,6 @@ const getCommentsByTripId = async (
 };
 
 
-
-
-
-
 const getCommentByIdFromDb = async (tripId: string) => {
   const result = await prisma.comment.findUnique({
     where: {
@@ -289,7 +285,17 @@ const deleteCommentItemFromDb = async (userId: string, commentId: string) => {
   return deletedItems;
 };
 
-
+const getAllCommentByTripIdFromDb = async (tripId: string) => {
+  const result = await prisma.comment.findMany({
+    where: {
+      tripId: tripId,
+    },
+  });
+  if (!result) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+  }
+  return result;
+};
 export const commentService = {
   createCommentIntoDb,
   getCommentListFromDb,
@@ -298,4 +304,5 @@ export const commentService = {
   deleteCommentItemFromDb,
   replyCommentByTripIdFromDb,
   getCommentsByTripId,
+  getAllCommentByTripIdFromDb,
 };

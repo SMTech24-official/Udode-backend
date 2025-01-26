@@ -77,6 +77,16 @@ const replyCommentByTripId = (0, catchAsync_1.default)((req, res) => __awaiter(v
         data: result,
     });
 }));
+const getAllCommentByTripId = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = req.user;
+    const result = yield comment_service_1.commentService.getAllCommentByTripIdFromDb(req.params.tripId);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: 'All comments retrieved successfully',
+        data: result,
+    });
+}));
 exports.commentController = {
     createComment,
     getCommentList,
@@ -84,4 +94,5 @@ exports.commentController = {
     updateComment,
     deleteComment,
     replyCommentByTripId,
+    getAllCommentByTripId,
 };

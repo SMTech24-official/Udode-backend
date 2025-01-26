@@ -16,12 +16,10 @@ const UserSchema = z.object({
 
 export const TStripeSaveWithCustomerInfoPayloadSchema = z.object({
   body: z.object({
-    user: UserSchema,
     paymentMethodId: z.string({
       required_error: 'Payment Method ID is required',
     }),
-    amount: z.number({ required_error: 'Amount is required' }),
-    address: AddressSchema,
+    
   }),
 });
 

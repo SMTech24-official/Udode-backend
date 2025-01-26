@@ -13,7 +13,7 @@ import prisma from '../../utils/prisma';
 
 const createAccount = catchAsync( async (req: Request, res: Response) => {
   const user = req.user as any;
-  const result = await StripeServices.createAccountIntoStripe(user.id);
+  const result = await StripeServices.createAccountIntoStripe(user);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -28,7 +28,7 @@ const saveCardWithCustomerInfo = catchAsync( async (req: Request, res: Response)
   const user = req.user as any;
   const result = await StripeServices.saveCardWithCustomerInfoIntoStripe(
     req.body,
-    user.id
+    user
   );
 
   sendResponse(res, {
@@ -42,7 +42,6 @@ const saveCardWithCustomerInfo = catchAsync( async (req: Request, res: Response)
 // Authorize the customer with the amount and send payment request
 const authorizedPaymentWithSaveCard = catchAsync( async (req: any, res: any) => {
   const user = req.user as any;
-  console.log(user)
   const result = await StripeServices.authorizedPaymentWithSaveCardFromStripe(
     user.id, req.body,
   );
@@ -84,8 +83,9 @@ const saveNewCardWithExistingCustomer =
 
 // Get all save cards for customer
 const getCustomerSavedCards = catchAsync( async (req: any, res: any) => {
+  const user = req.user as any;
   const result = await StripeServices.getCustomerSavedCardsFromStripe(
-    req?.params?.customerId,
+    user.id,
   );
 
   sendResponse(res, {
@@ -135,8 +135,9 @@ const createPaymentIntent = catchAsync( async (req: any, res: any) => {
 });
 
 const getCustomerDetails = catchAsync( async (req: any, res: any) => {
+  const user = req.user as any;  
   const result = await StripeServices.getCustomerDetailsFromStripe(
-    req?.params?.customerId,
+    user.id,
   );
 
   sendResponse(res, {

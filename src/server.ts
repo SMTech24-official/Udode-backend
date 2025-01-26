@@ -2,6 +2,7 @@ import { Server } from 'http';
 import app from './app';
 import seedSuperAdmin from './app/DB';
 import config from './config';
+import { setupWebSocket } from './app/utils/websocket';
 
 const port = config.port || 5000;
 
@@ -10,6 +11,10 @@ async function main() {
     console.log('Sever is running on port ', port);
     seedSuperAdmin();
   });
+
+  setupWebSocket(server);
+
+
   const exitHandler = () => {
     if (server) {
       server.close(() => {

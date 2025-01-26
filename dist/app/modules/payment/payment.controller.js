@@ -22,7 +22,7 @@ const config_1 = __importDefault(require("../../../config"));
 const prisma_1 = __importDefault(require("../../utils/prisma"));
 const createAccount = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield payment_service_1.StripeServices.createAccountIntoStripe(user.id);
+    const result = yield payment_service_1.StripeServices.createAccountIntoStripe(user);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.CREATED,
         success: true,
@@ -44,7 +44,6 @@ const saveCardWithCustomerInfo = (0, catchAsync_1.default)((req, res) => __await
 // Authorize the customer with the amount and send payment request
 const authorizedPaymentWithSaveCard = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    console.log(user);
     const result = yield payment_service_1.StripeServices.authorizedPaymentWithSaveCardFromStripe(user.id, req.body);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
@@ -75,8 +74,8 @@ const saveNewCardWithExistingCustomer = (0, catchAsync_1.default)((req, res) => 
 }));
 // Get all save cards for customer
 const getCustomerSavedCards = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    const result = yield payment_service_1.StripeServices.getCustomerSavedCardsFromStripe((_a = req === null || req === void 0 ? void 0 : req.params) === null || _a === void 0 ? void 0 : _a.customerId);
+    const user = req.user;
+    const result = yield payment_service_1.StripeServices.getCustomerSavedCardsFromStripe(user.id);
     (0, sendResponse_1.default)(res, {
         statusCode: 200,
         success: true,
@@ -86,8 +85,8 @@ const getCustomerSavedCards = (0, catchAsync_1.default)((req, res) => __awaiter(
 }));
 // Delete card from customer
 const deleteCardFromCustomer = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b;
-    const result = yield payment_service_1.StripeServices.deleteCardFromCustomer((_b = req.params) === null || _b === void 0 ? void 0 : _b.paymentMethodId);
+    var _a;
+    const result = yield payment_service_1.StripeServices.deleteCardFromCustomer((_a = req.params) === null || _a === void 0 ? void 0 : _a.paymentMethodId);
     (0, sendResponse_1.default)(res, {
         statusCode: 200,
         success: true,
@@ -116,8 +115,8 @@ const createPaymentIntent = (0, catchAsync_1.default)((req, res) => __awaiter(vo
     });
 }));
 const getCustomerDetails = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c;
-    const result = yield payment_service_1.StripeServices.getCustomerDetailsFromStripe((_c = req === null || req === void 0 ? void 0 : req.params) === null || _c === void 0 ? void 0 : _c.customerId);
+    const user = req.user;
+    const result = yield payment_service_1.StripeServices.getCustomerDetailsFromStripe(user.id);
     (0, sendResponse_1.default)(res, {
         statusCode: 200,
         success: true,
@@ -135,7 +134,7 @@ const getAllCustomers = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
     });
 }));
 const handleWebHook = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d, _e;
+    var _b, _c;
     const sig = req.headers['stripe-signature'];
     console.log(sig);
     if (!sig) {
@@ -165,7 +164,7 @@ const handleWebHook = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
                 console.log('Onboarding completed successfully for account:', account.id);
                 const user = yield prisma_1.default.user.update({
                     where: {
-                        id: (_d = account.metadata) === null || _d === void 0 ? void 0 : _d.userId,
+                        id: (_b = account.metadata) === null || _b === void 0 ? void 0 : _b.userId,
                         email: account.email,
                     },
                     data: {
@@ -183,7 +182,7 @@ const handleWebHook = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
                 if (user) {
                     yield prisma_1.default.user.update({
                         where: {
-                            id: (_e = account.metadata) === null || _e === void 0 ? void 0 : _e.userId,
+                            id: (_c = account.metadata) === null || _c === void 0 ? void 0 : _c.userId,
                         },
                         data: {
                             stripeAccountUrl: null,

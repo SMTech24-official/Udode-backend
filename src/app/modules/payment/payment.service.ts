@@ -15,53 +15,80 @@ const stripe = new Stripe(config.stripe.stripe_secret_key as string, {
 // Step 1: Create a Customer and Save the Card
 const saveCardWithCustomerInfoIntoStripe = async (
   payload: TStripeSaveWithCustomerInfo,
-  userId: string,
+  user: any,
 ) => {
   try {
-    const { user, paymentMethodId, address } = payload;
-
-    // Create a new Stripe customer
-    const customer = await stripe.customers.create({
-      name: user.name,
-      email: user.email,
-      address: {
-        city: address.city,
-        postal_code: address.postal_code,
-        country: address.country,
-      },
-    });
-
-    // Attach PaymentMethod to the Customer
-    const attach = await stripe.paymentMethods.attach(paymentMethodId, {
-      customer: customer.id,
-    });
-
-    // Set PaymentMethod as Default
-    const updateCustomer = await stripe.customers.update(customer.id, {
-      invoice_settings: {
-        default_payment_method: paymentMethodId,
-      },
-    });
-
-    // update profile with customerId
-    await prisma.user.update({
+    const { paymentMethodId } = payload;
+    let existCustomer = await prisma.user.findUnique({
       where: {
-        id: userId,
+        id: user.id as string,
       },
-      data: {
-        senderCustomerID: customer.id,
+      select: {
+        senderCustomerID: true,
+        fullName: true,
+        email: true,
       },
     });
 
-    return {
-      customerId: customer.id,
-      paymentMethodId: paymentMethodId,
-    };
+    if (!existCustomer) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Customer not found');
+    }
+
+    if (!existCustomer.senderCustomerID) {
+      // Create a new Stripe customer
+      const customer = await stripe.customers.create({
+        name: existCustomer.fullName,
+        email: existCustomer.email,
+      });
+
+      // Attach PaymentMethod to the Customer
+      await stripe.paymentMethods.attach(paymentMethodId, {
+        customer: customer.id,
+      });
+
+      // Set PaymentMethod as Default
+      await stripe.customers.update(customer.id, {
+        invoice_settings: {
+          default_payment_method: paymentMethodId,
+        },
+      });
+
+      await prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          senderCustomerID: customer.id,
+        },
+      });
+
+      return {
+        customerId: customer.id,
+        paymentMethodId: paymentMethodId,
+      };
+    } else {
+      // Attach PaymentMethod to the existing Customer
+      await stripe.paymentMethods.attach(paymentMethodId, {
+        customer: existCustomer.senderCustomerID,
+      });
+
+      // Set PaymentMethod as Default
+      await stripe.customers.update(existCustomer.senderCustomerID, {
+        invoice_settings: {
+          default_payment_method: paymentMethodId,
+        },
+      });
+
+      return {
+        customerId: existCustomer.senderCustomerID,
+        paymentMethodId: paymentMethodId,
+      };
+    }
   } catch (error: any) {
-    throw Error(error.message);
+    console.error('Error in saveCardWithCustomerInfoIntoStripe:', error);
+    throw new Error(error.message);
   }
 };
-
 // Step 2: Authorize the Payment Using Saved Card
 const authorizedPaymentWithSaveCardFromStripe = async (
   userId: string,
@@ -163,8 +190,11 @@ const authorizedPaymentWithSaveCardFromStripe = async (
 
   const transportPriceInKobo = Math.round(parcel.parcelTransportPrice * 100); // Convert to Kobo
 
-  if(transportPriceInKobo < 25000){
-    throw new AppError(httpStatus.BAD_REQUEST, 'Minimum amount to be paid is 250');
+  if (transportPriceInKobo < 25000) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Minimum amount to be paid is 250',
+    );
   }
   // Calculate the amount to be transferred to the delivery person (65% of the total price)
   const transferAmount = Math.round(parcel.parcelTransportPrice * 0.65 * 100);
@@ -260,10 +290,11 @@ const capturePaymentRequestToStripe = async (payload: { parcelId: string }) => {
 
   const payment = await prisma.payment.findUnique({
     where: { parcelId: parcelId },
-    select: { paymentId: true,
+    select: {
+      paymentId: true,
       paymentAmount: true,
       stripeAccountIdReceiver: true,
-     },
+    },
   });
   if (!payment) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Payment not found');
@@ -283,7 +314,7 @@ const capturePaymentRequestToStripe = async (payload: { parcelId: string }) => {
       parcelId: parcelId, // Include parcel or order-related metadata
     },
   });
-  if(!transfer){
+  if (!transfer) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Transfer not created');
   }
 
@@ -339,11 +370,19 @@ const saveNewCardWithExistingCustomerIntoStripe = async (payload: {
   }
 };
 
-const getCustomerSavedCardsFromStripe = async (customerId: string) => {
+const getCustomerSavedCardsFromStripe = async (userId: string) => {
   try {
+    const userData = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    // Retrieve the customer details from Stripe
+    if (!userData || !userData.senderCustomerID) {
+      return { message: 'User data or customer ID not found' };
+    }
     // List all payment methods for the customer
     const paymentMethods = await stripe.paymentMethods.list({
-      customer: customerId,
+      customer: userData.senderCustomerID,
       type: 'card',
     });
 
@@ -407,10 +446,17 @@ const createPaymentIntentService = async (payload: { amount: number }) => {
   };
 };
 
-const getCustomerDetailsFromStripe = async (customerId: string) => {
+const getCustomerDetailsFromStripe = async (userId: string) => {
   try {
+    const userData = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
     // Retrieve the customer details from Stripe
-    const customer = await stripe.customers.retrieve(customerId);
+    if (!userData || !userData.senderCustomerID) {
+      return { message: 'User data or customer ID not found' };
+    }
+    const customer = await stripe.customers.retrieve(userData.senderCustomerID);
 
     return customer;
   } catch (error: any) {

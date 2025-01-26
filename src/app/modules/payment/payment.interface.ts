@@ -1,8 +1,5 @@
 export interface TStripeSaveWithCustomerInfo {
-  user: User;
   paymentMethodId: string;
-  amount: number;
-  address: Address;
 }
 
 interface Address {

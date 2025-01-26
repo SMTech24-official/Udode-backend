@@ -24,7 +24,7 @@ router.post('/save-new-card', (0, validateRequest_1.default)(payment_validation_
 router.delete('/delete-card/:paymentMethodId', payment_controller_1.PaymentController.deleteCardFromCustomer);
 // Refund payment to customer
 router.post('/refund-payment', (0, validateRequest_1.default)(payment_validation_1.refundPaymentPayloadSchema), payment_controller_1.PaymentController.refundPaymentToCustomer);
-router.get('/customers/:customerId', payment_controller_1.PaymentController.getCustomerDetails);
+router.get('/customer-save-cards', (0, auth_1.default)(), payment_controller_1.PaymentController.getCustomerSavedCards);
 router.get('/customers', (0, auth_1.default)(), payment_controller_1.PaymentController.getAllCustomers);
-router.get('/:customerId', payment_controller_1.PaymentController.getCustomerSavedCards);
+router.get('/', (0, auth_1.default)(), payment_controller_1.PaymentController.getCustomerDetails);
 exports.PaymentRoutes = router;

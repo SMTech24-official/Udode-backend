@@ -30,22 +30,78 @@ model User {
   senderCustomerID String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
-  notifications    Notification[]
+
+  // Relationships
   roomsSent        Room[]         @relation("SenderRelation")
   roomsReceived    Room[]         @relation("ReceiverRelation")
-  chatsSent        Chat[]         @relation("SenderRelation")
-  chatsReceived    Chat[]         @relation("ReceiverRelation")
+  roomParticipants RoomUser[]
+   chatsSent     Chat[]        @relation("SenderRelation")
+  chatsReceived Chat[]        @relation("ReceiverRelation")
+
+  // Terminal
   terminals        Terminal[]
-  feeds            TerminalFeed[]
-  Trip             Trip[]
-  comments         Comment[]
-  senderPerson     Parcel[]       @relation("SenderPersonRelation")
-  deliveryPerson   Parcel[]       @relation("DeliveryPersonRelation")
-  categories       Category[]
   reviews          Review[]
+  terminalFeeds    TerminalFeed[]
+  trips            Trip[]
+  comments         Comment[]
+  notifications    Notification[]
+  categories       Category[]
+  parcelsSent      Parcel[]        @relation("SenderPersonRelation")
+  parcelsDelivered Parcel[]        @relation("DeliveryPersonRelation")
+  // @@map("users")
 
   @@map("users")
 }
+
+model Room {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  name        String?
+  type        RoomType  @default(ONE_TO_ONE) // Type: One-to-one or Group chat
+  participants RoomUser[] // Relationship to participants (RoomUser table)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  chat        Chat[]
+
+  senderId    String?   @db.ObjectId
+  receiverId  String?   @db.ObjectId
+  sender      User?     @relation("SenderRelation", fields: [senderId], references: [id])
+  receiver    User?     @relation("ReceiverRelation", fields: [receiverId], references: [id])
+
+  @@map("rooms")
+}
+
+model RoomUser {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  roomId   String @db.ObjectId
+  userId   String @db.ObjectId
+  room     Room   @relation(fields: [roomId], references: [id])
+  user     User   @relation(fields: [userId], references: [id])
+
+  @@map("room_users")
+}
+
+
+
+model Chat {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  senderId   String   @db.ObjectId
+  receiverId String?  @db.ObjectId // Nullable for group chats
+  roomId     String   @db.ObjectId
+  message    String
+  images     String[]
+  isRead     Boolean  @default(false)
+  parcelId   String?  @db.ObjectId
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relationships
+  sender     User     @relation("SenderRelation", fields: [senderId], references: [id])
+  receiver   User?    @relation("ReceiverRelation", fields: [receiverId], references: [id]) // Optional for group chats
+  room       Room     @relation(fields: [roomId], references: [id])
+
+  @@map("chats")
+}
+
 
 model Terminal {
   id                 String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -169,36 +225,39 @@ model Notification {
   @@map("notifications")
 }
 
-model Chat {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  senderId   String   @db.ObjectId
-  receiverId String   @db.ObjectId
-  message    String
-  roomId     String   @db.ObjectId
-  images     String[]
-  isRead     Boolean  @default(false)
-  parcelId   String?  @db.ObjectId
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  sender     User     @relation("SenderRelation", fields: [senderId], references: [id])
-  receiver   User     @relation("ReceiverRelation", fields: [receiverId], references: [id])
-  room       Room     @relation(fields: [roomId], references: [id])
+// model Chat {
+//   id         String   @id @default(auto()) @map("_id") @db.ObjectId
+//   senderId   String   @db.ObjectId
+//   roomId     String   @db.ObjectId
+//   message    String
+//   images     String[]
+//   isRead     Boolean  @default(false)
+//   parcelId   String?  @db.ObjectId
+//   createdAt  DateTime @default(now())
+//   updatedAt  DateTime @updatedAt
+//   sender     User     @relation("SenderRelation", fields: [senderId], references: [id])
+//   room       Room     @relation(fields: [roomId], references: [id])
 
-  @@map("chats")
-}
+//   @@map("chats")
+// }
 
-model Room {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  senderId   String   @db.ObjectId
-  receiverId String   @db.ObjectId
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  sender     User     @relation("SenderRelation", fields: [senderId], references: [id])
-  receiver   User     @relation("ReceiverRelation", fields: [receiverId], references: [id])
-  chat       Chat[]
 
-  @@map("rooms")
-}
+// model Room {
+//   id          String   @id @default(auto()) @map("_id") @db.ObjectId
+//   name        String?  // Name for the group (optional for one-to-one)
+//   type        RoomType @default(ONE_TO_ONE) // Enum to distinguish between one-to-one and group
+//   users       User[]   @relation("RoomParticipants") // Many-to-many relationship for group members
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+//   senderId    String?  @db.ObjectId // Required for one-to-one messages
+//   receiverId  String?  @db.ObjectId // Required for one-to-one messages
+//   sender      User?    @relation("SenderRelation", fields: [senderId], references: [id])
+//   receiver    User?    @relation("ReceiverRelation", fields: [receiverId], references: [id])
+//   chat        Chat[]
+
+//   @@map("rooms")
+// }
+
 
 model Parcel {
   id                   String        @id @default(auto()) @map("_id") @db.ObjectId
@@ -271,4 +330,9 @@ enum TrafficStatus {
   LOW
   MEDIUM
   HIGH
+}
+
+enum RoomType {
+  ONE_TO_ONE
+  GROUP
 }

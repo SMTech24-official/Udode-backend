@@ -4,7 +4,6 @@ import { PaymentController } from './payment.controller';
 
 const router = express.Router();
 
-
 import {
   AuthorizedPaymentPayloadSchema,
   capturedPaymentPayloadSchema,
@@ -14,12 +13,7 @@ import {
 } from './payment.validation';
 import validateRequest from '../../middlewares/validateRequest';
 
-
-router.post(
-  '/create-account',
-  auth(),
-  PaymentController.createAccount,
-);
+router.post('/create-account', auth(), PaymentController.createAccount);
 
 // create a new customer with card
 router.post(
@@ -65,15 +59,15 @@ router.post(
   validateRequest(refundPaymentPayloadSchema),
   PaymentController.refundPaymentToCustomer,
 );
-
-router.get('/customers/:customerId', PaymentController.getCustomerDetails);
-
 router.get(
-  '/customers', 
+  '/customer-save-cards',
   auth(),
-  PaymentController.getAllCustomers);
-  
-  router.get('/:customerId', PaymentController.getCustomerSavedCards);
+  PaymentController.getCustomerSavedCards,
+);
 
+
+router.get('/customers', auth(), PaymentController.getAllCustomers);
+
+router.get('/', auth(), PaymentController.getCustomerDetails);
 
 export const PaymentRoutes = router;

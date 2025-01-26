@@ -203,6 +203,17 @@ const deleteCommentItemFromDb = (userId, commentId) => __awaiter(void 0, void 0,
     }
     return deletedItems;
 });
+const getAllCommentByTripIdFromDb = (tripId) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield prisma_1.default.comment.findMany({
+        where: {
+            tripId: tripId,
+        },
+    });
+    if (!result) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Comment not found');
+    }
+    return result;
+});
 exports.commentService = {
     createCommentIntoDb,
     getCommentListFromDb,
@@ -211,4 +222,5 @@ exports.commentService = {
     deleteCommentItemFromDb,
     replyCommentByTripIdFromDb,
     getCommentsByTripId,
+    getAllCommentByTripIdFromDb,
 };
