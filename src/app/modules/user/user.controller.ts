@@ -190,6 +190,40 @@ const withdrawBalance = catchAsync(async (req, res) => {
   });
 });
 
+const uploadIdProof = catchAsync(async (req, res) => {
+  const user = req.user as any;
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+  if (!files || !files.frontIdCard || !files.backIdCard) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Files not found');
+  }
+
+  const frontIdCardFile = files.frontIdCard[0];
+  const backIdCardFile = files.backIdCard[0];
+
+  const frontIdCardUrl = await uploadFileToSpace(
+    frontIdCardFile,
+    'retire-professional',
+  );
+  const backIdCardUrl = await uploadFileToSpace(
+    backIdCardFile,
+    'retire-professional',
+  );
+
+  const result = await UserServices.uploadIdProofIntoDB(
+    user.id,
+    frontIdCardUrl,
+    backIdCardUrl,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    message: 'ID proof uploaded successfully',
+    data: result,
+  });
+});
+
+
 export const UserControllers = {
   registerUser,
   getAllUsers,
@@ -207,4 +241,5 @@ export const UserControllers = {
   updateMyProfile,
   getEarnings,
   withdrawBalance,
+  uploadIdProof,
 };

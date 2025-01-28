@@ -6,6 +6,7 @@ import { TStripeSaveWithCustomerInfo } from './payment.interface';
 import prisma from '../../utils/prisma';
 import AppError from '../../errors/AppError';
 import { ParcelStatus, PaymentStatus, UserRoleEnum } from '@prisma/client';
+import { notificationService } from '../Notification/Notification.service';
 
 // Initialize Stripe with your secret API key
 const stripe = new Stripe(config.stripe.stripe_secret_key as string, {
@@ -228,7 +229,7 @@ const authorizedPaymentWithSaveCardFromStripe = async (
       data: {
         paymentId: paymentIntent.id,
         stripeAccountIdReceiver: deliveryPerson.stripeCustomerId as string,
-        paymentAmount: paymentIntent.amount,
+        paymentAmount: parcel.parcelTransportPrice,
         paymentDate: new Date(),
         parcelId: parcelId,
         status: PaymentStatus.REQUIRES_CAPTURE,
@@ -258,17 +259,22 @@ const authorizedPaymentWithSaveCardFromStripe = async (
     }
 
     // Send notification to the user
-    // const user = await prisma.user.findUnique({
-    //   where: { id: userId },
-    //   select: { fcmToken: true },
-    // });
+    const user = await prisma.user.findUnique({
+      where: { id: parcel.deliveryPersonId },
+      select: { fcmToken: true },
+    });
 
-    // const notificationTitle = 'Payment Successful';
-    // const notificationBody = 'Your payment has been processed successfully and your project is confirmed';
+    const notificationTitle = 'Payment Successful';
+    const notificationBody = 'Your payment has been processed successfully and hold for delivery. Start your delivery now';
 
-    // if (user && user.fcmToken) {
-    //   await notificationService.sendNotification(user.fcmToken, notificationTitle, notificationBody, userId);
-    // }
+    if (user && user.fcmToken) {
+      await notificationService.sendNotification(
+        user.fcmToken,
+        notificationTitle,
+        notificationBody,
+        parcel.deliveryPersonId,
+      );
+    }
   }
 
   return paymentIntent;
@@ -281,7 +287,7 @@ const capturePaymentRequestToStripe = async (payload: { parcelId: string }) => {
   const parcel = await prisma.parcel.findUnique({
     where: {
       id: parcelId,
-      parcelStatus: ParcelStatus.DELIVERED,
+      parcelStatus: ParcelStatus.COMPLETED,
     },
   });
   if (!parcel) {
@@ -307,15 +313,15 @@ const capturePaymentRequestToStripe = async (payload: { parcelId: string }) => {
   }
 
   const transfer = await stripe.transfers.create({
-    amount: payment.paymentAmount, // Amount in the smallest currency unit (e.g., cents for USD)
-    currency: 'ngn', // Currency of the connected account
+    amount: payment.paymentAmount * 100, // Amount in the smallest currency unit (e.g., cents for USD)
+    currency: 'usd', // Currency of the connected account
     destination: payment.stripeAccountIdReceiver, // Connected account ID
     metadata: {
       parcelId: parcelId, // Include parcel or order-related metadata
     },
   });
   if (!transfer) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Transfer not created');
+    throw new AppError(httpStatus.PAYMENT_REQUIRED, 'Transfer not created');
   }
 
   const paymentStatus = await prisma.payment.update({

@@ -33,7 +33,8 @@ import catchAsync from '../../utils/catchAsync';
 import { ${moduleName}Service } from './${moduleName}.service';
 
 const create${capitalizedModule} = catchAsync(async (req, res) => {
-  const result = await ${moduleName}Service.create${capitalizedModule}IntoDb(req.body);
+  const user = req.user as any;
+  const result = await ${moduleName}Service.create${capitalizedModule}IntoDb(user.id, req.body);
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
@@ -43,6 +44,7 @@ const create${capitalizedModule} = catchAsync(async (req, res) => {
 });
 
 const get${capitalizedModule}List = catchAsync(async (req, res) => {
+  const user = req.user as any;
   const result = await ${moduleName}Service.get${capitalizedModule}ListFromDb();
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -53,6 +55,7 @@ const get${capitalizedModule}List = catchAsync(async (req, res) => {
 });
 
 const get${capitalizedModule}ById = catchAsync(async (req, res) => {
+  const user = req.user as any;
   const result = await ${moduleName}Service.get${capitalizedModule}ByIdFromDb(req.params.id);
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -63,7 +66,8 @@ const get${capitalizedModule}ById = catchAsync(async (req, res) => {
 });
 
 const update${capitalizedModule} = catchAsync(async (req, res) => {
-  const result = await ${moduleName}Service.update${capitalizedModule}IntoDb(req.params.id, req.body);
+  const user = req.user as any;
+  const result = await ${moduleName}Service.update${capitalizedModule}IntoDb(user.id, req.params.id, req.body);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -73,7 +77,8 @@ const update${capitalizedModule} = catchAsync(async (req, res) => {
 });
 
 const delete${capitalizedModule} = catchAsync(async (req, res) => {
-  const result = await ${moduleName}Service.delete${capitalizedModule}ItemFromDb(req.params.id);
+  const user = req.user as any;
+  const result = await ${moduleName}Service.delete${capitalizedModule}ItemFromDb(user.id, req.params.id);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -98,57 +103,74 @@ import AppError from '../../errors/AppError';
 import httpStatus from 'http-status';
 
 
-const create${capitalizedModule}IntoDb = async (data: any) => {
-  const transaction = await prisma.$transaction(async (prisma) => {
-    const result = await prisma.${moduleName}.create({ data });
-    return result;
+const create${capitalizedModule}IntoDb = async (userId: string, data: any) => {
+  
+    const result = await prisma.${moduleName}.create({ 
+    data: {
+      ...data,
+      userId: userId,
+    },
   });
-
-  return transaction;
+  if (!result) {
+    throw new AppError(httpStatus.BAD_REQUEST, '${moduleName} not created');
+  }
+    return result;
 };
 
 const get${capitalizedModule}ListFromDb = async () => {
   
     const result = await prisma.${moduleName}.findMany();
+    if (result.length === 0) {
+    return { message: 'No ${moduleName} found' };
+  }
     return result;
 };
 
-const get${capitalizedModule}ByIdFromDb = async (id: string) => {
+const get${capitalizedModule}ByIdFromDb = async (${moduleName}Id: string) => {
   
-    const result = await prisma.${moduleName}.findUnique({ where: { id } });
-    if (!result) {
-      throw new Error('${capitalizedModule} not found');
+    const result = await prisma.${moduleName}.findUnique({ 
+    where: {
+      id: ${moduleName}Id,
     }
+   });
+    if (!result) {
+    throw new AppError(httpStatus.NOT_FOUND,'${moduleName} not found');
+  }
     return result;
   };
 
 
 
-const update${capitalizedModule}IntoDb = async (id: string, data: any) => {
-  const transaction = await prisma.$transaction(async (prisma) => {
+const update${capitalizedModule}IntoDb = async (userId: string, ${moduleName}Id: string, data: any) => {
+  
     const result = await prisma.${moduleName}.update({
-      where: { id },
-      data,
-    });
+      where:  {
+        id: ${moduleName}Id,
+        userId: userId,
+    },
+    data: {
+      ...data,
+    },
+  });
+  if (!result) {
+    throw new AppError(httpStatus.BAD_REQUEST, '${moduleName}Id, not updated');
+  }
     return result;
-  });
+  };
 
-  return transaction;
-};
-
-const delete${capitalizedModule}ItemFromDb = async (id: string) => {
-  const transaction = await prisma.$transaction(async (prisma) => {
+const delete${capitalizedModule}ItemFromDb = async (userId: string, ${moduleName}Id: string) => {
     const deletedItem = await prisma.${moduleName}.delete({
-      where: { id },
-    });
-
-    // Add any additional logic if necessary, e.g., cascading deletes
-    return deletedItem;
+      where: {
+      id: ${moduleName}Id,
+      userId: userId,
+    },
   });
+  if (!deletedItem) {
+    throw new AppError(httpStatus.BAD_REQUEST, '${moduleName}Id, not deleted');
+  }
 
-  return transaction;
-};
-;
+    return deletedItem;
+  };
 
 export const ${moduleName}Service = {
 create${capitalizedModule}IntoDb,
@@ -195,17 +217,17 @@ export const ${moduleName}Routes = router;
 import { z } from 'zod';
 
 const createSchema = z.object({
-
+  body: z.object({
     name: z.string().min(1, 'Name is required'),
     description: z.string().optional(),
-
+    }),
 });
 
 const updateSchema = z.object({
-
+  body: z.object({
     name: z.string().optional(),
     description: z.string().optional(),
-
+    }),
 });
 
 export const ${moduleName}Validation = {

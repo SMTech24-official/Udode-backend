@@ -17,6 +17,7 @@ const prisma_1 = __importDefault(require("../../utils/prisma"));
 const client_1 = require("@prisma/client");
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const http_status_1 = __importDefault(require("http-status"));
+const Notification_service_1 = require("../Notification/Notification.service");
 const createParcelIntoDb = (userId, parcelData) => __awaiter(void 0, void 0, void 0, function* () {
     const { data, parcelImage } = parcelData;
     const result = yield prisma_1.default.parcel.create({
@@ -74,7 +75,7 @@ const getParcelByIdFromDb = (userId, parcelId) => __awaiter(void 0, void 0, void
         },
     });
     if (!result) {
-        throw new Error('Parcel not found');
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Parcel not found');
     }
     const user = yield prisma_1.default.user.findUnique({
         where: {
@@ -144,24 +145,40 @@ const getParcelListByUserFromDb = (userId) => __awaiter(void 0, void 0, void 0, 
     return result;
 });
 const updateParcelIntoDb = (userId, parcelId, parcelData) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const { data, parcelImage } = parcelData;
     const updateData = Object.assign(Object.assign({}, data), { userId: userId });
     if (parcelImage !== undefined) {
         updateData.image = parcelImage;
     }
+    if (data.endDateTime) {
+        updateData.endDateTime = new Date(data.endDateTime);
+    }
     const result = yield prisma_1.default.parcel.update({
         where: {
             id: parcelId,
         },
-        data: Object.assign(Object.assign({}, updateData), { endDateTime: new Date(data.endDateTime) }),
+        data: updateData,
     });
     if (!result) {
         throw new AppError_1.default(http_status_1.default.CONFLICT, 'Parcel not updated');
     }
+    if (result.parcelStatus === client_1.ParcelStatus.DELIVERED) {
+        const user = yield prisma_1.default.user.findUnique({
+            where: { id: (_a = result.deliveryPersonId) !== null && _a !== void 0 ? _a : undefined },
+            select: { fcmToken: true, id: true },
+        });
+        console.log(user);
+        if (user && user.fcmToken) {
+            const notificationTitle = 'Parcel Received Successfully';
+            const notificationBody = 'Your delivery parcel is Received Successfully';
+            yield Notification_service_1.notificationService.sendNotification(user.fcmToken, notificationTitle, notificationBody, result.deliveryPersonId);
+        }
+    }
     return result;
 });
 const updateParcelToPickupIntoDb = (userId, parcelId, data) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield prisma_1.default.parcel.update({
+    const parcel = yield prisma_1.default.parcel.update({
         where: {
             id: parcelId,
             deliveryPersonId: userId,
@@ -170,10 +187,21 @@ const updateParcelToPickupIntoDb = (userId, parcelId, data) => __awaiter(void 0,
             parcelStatus: data.parcelStatus,
         },
     });
-    if (!result) {
+    if (!parcel) {
         throw new AppError_1.default(http_status_1.default.CONFLICT, 'Parcel not updated');
     }
-    return result;
+    const user = yield prisma_1.default.user.findUnique({
+        where: { id: parcel.userId },
+        select: { fcmToken: true },
+    });
+    if (parcel.parcelStatus === client_1.ParcelStatus.DELIVERED) {
+        const notificationTitle = 'Parcel Delivered Successfully';
+        const notificationBody = 'Your parcel is Delivered to the destination';
+        if (user && user.fcmToken) {
+            yield Notification_service_1.notificationService.sendNotification(user.fcmToken, notificationTitle, notificationBody, parcel.userId);
+        }
+    }
+    return parcel;
 });
 const deleteParcelItemFromDb = (userId, parcelId) => __awaiter(void 0, void 0, void 0, function* () {
     const deletedItem = yield prisma_1.default.parcel.delete({
@@ -188,13 +216,16 @@ const deleteParcelItemFromDb = (userId, parcelId) => __awaiter(void 0, void 0, v
     return deletedItem;
 });
 const updateParcelToAcceptIntoDb = (userId, parcelId, data) => __awaiter(void 0, void 0, void 0, function* () {
-    const parcel = yield prisma_1.default.parcel.findUnique({
-        where: {
-            id: parcelId,
-        },
-    });
-    if ((parcel === null || parcel === void 0 ? void 0 : parcel.deliveryPersonId) !== userId) {
-        const result = yield prisma_1.default.parcel.update({
+    const result = yield prisma_1.default.$transaction((prisma) => __awaiter(void 0, void 0, void 0, function* () {
+        const parcel = yield prisma.parcel.findUnique({
+            where: {
+                id: parcelId,
+            },
+        });
+        if (!parcel) {
+            throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Parcel not found');
+        }
+        const updatedParcel = yield prisma.parcel.update({
             where: {
                 id: parcelId,
             },
@@ -203,14 +234,23 @@ const updateParcelToAcceptIntoDb = (userId, parcelId, data) => __awaiter(void 0,
                 parcelStatus: data.parcelStatus,
             },
         });
-        if (!result) {
+        if (!updatedParcel) {
             throw new AppError_1.default(http_status_1.default.CONFLICT, 'Parcel not updated');
         }
-        return result;
-    }
-    else {
-        throw new AppError_1.default(http_status_1.default.CONFLICT, 'Parcel not updated');
-    }
+        const user = yield prisma.user.findUnique({
+            where: { id: parcel.userId },
+            select: { fcmToken: true },
+        });
+        if (updatedParcel.parcelStatus === client_1.ParcelStatus.ACCEPTED) {
+            const notificationTitle = 'Parcel Accepted Successfully';
+            const notificationBody = 'Your parcel is ready to pickup';
+            if (user && user.fcmToken) {
+                yield Notification_service_1.notificationService.sendNotification(user.fcmToken, notificationTitle, notificationBody, parcel.userId);
+            }
+        }
+        return updatedParcel;
+    }));
+    return result;
 });
 exports.parcelService = {
     createParcelIntoDb,

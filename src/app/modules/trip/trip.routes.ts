@@ -15,7 +15,10 @@ tripController.createTrip,
 
 router.get('/', auth(), tripController.getTripList);
 
+router.get('/user-trips', auth(), tripController.getTripListByUser);
+
 router.get('/:tripId', auth(), tripController.getTripById);
+
 
 router.put(
   '/:tripId',

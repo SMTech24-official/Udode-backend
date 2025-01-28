@@ -20,6 +20,7 @@ const isValidAmount_1 = require("../../utils/isValidAmount");
 const prisma_1 = __importDefault(require("../../utils/prisma"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const client_1 = require("@prisma/client");
+const Notification_service_1 = require("../Notification/Notification.service");
 // Initialize Stripe with your secret API key
 const stripe = new stripe_1.default(config_1.default.stripe.stripe_secret_key, {
     apiVersion: '2024-12-18.acacia',
@@ -27,31 +28,36 @@ const stripe = new stripe_1.default(config_1.default.stripe.stripe_secret_key, {
 // Step 1: Create a Customer and Save the Card
 const saveCardWithCustomerInfoIntoStripe = (payload, user) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { paymentMethodId, } = payload;
-        // Create a new Stripe customer
-        const customer = yield stripe.customers.create({
-            name: user.name,
-            email: user.email,
-            address: {
-                city: user.city
-            },
-        });
-        // Attach PaymentMethod to the Customer
-        const attach = yield stripe.paymentMethods.attach(paymentMethodId, {
-            customer: customer.id,
-        });
-        // Set PaymentMethod as Default
-        const updateCustomer = yield stripe.customers.update(customer.id, {
-            invoice_settings: {
-                default_payment_method: paymentMethodId,
-            },
-        });
-        const customerId = yield prisma_1.default.user.findUnique({
+        const { paymentMethodId } = payload;
+        let existCustomer = yield prisma_1.default.user.findUnique({
             where: {
                 id: user.id,
             },
+            select: {
+                senderCustomerID: true,
+                fullName: true,
+                email: true,
+            },
         });
-        if (!(customerId === null || customerId === void 0 ? void 0 : customerId.senderCustomerID)) {
+        if (!existCustomer) {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Customer not found');
+        }
+        if (!existCustomer.senderCustomerID) {
+            // Create a new Stripe customer
+            const customer = yield stripe.customers.create({
+                name: existCustomer.fullName,
+                email: existCustomer.email,
+            });
+            // Attach PaymentMethod to the Customer
+            yield stripe.paymentMethods.attach(paymentMethodId, {
+                customer: customer.id,
+            });
+            // Set PaymentMethod as Default
+            yield stripe.customers.update(customer.id, {
+                invoice_settings: {
+                    default_payment_method: paymentMethodId,
+                },
+            });
             yield prisma_1.default.user.update({
                 where: {
                     id: user.id,
@@ -60,14 +66,31 @@ const saveCardWithCustomerInfoIntoStripe = (payload, user) => __awaiter(void 0, 
                     senderCustomerID: customer.id,
                 },
             });
+            return {
+                customerId: customer.id,
+                paymentMethodId: paymentMethodId,
+            };
         }
-        return {
-            customerId: customer.id,
-            paymentMethodId: paymentMethodId,
-        };
+        else {
+            // Attach PaymentMethod to the existing Customer
+            yield stripe.paymentMethods.attach(paymentMethodId, {
+                customer: existCustomer.senderCustomerID,
+            });
+            // Set PaymentMethod as Default
+            yield stripe.customers.update(existCustomer.senderCustomerID, {
+                invoice_settings: {
+                    default_payment_method: paymentMethodId,
+                },
+            });
+            return {
+                customerId: existCustomer.senderCustomerID,
+                paymentMethodId: paymentMethodId,
+            };
+        }
     }
     catch (error) {
-        throw Error(error.message);
+        console.error('Error in saveCardWithCustomerInfoIntoStripe:', error);
+        throw new Error(error.message);
     }
 });
 // Step 2: Authorize the Payment Using Saved Card
@@ -180,7 +203,7 @@ const authorizedPaymentWithSaveCardFromStripe = (userId, payload) => __awaiter(v
             data: {
                 paymentId: paymentIntent.id,
                 stripeAccountIdReceiver: deliveryPerson.stripeCustomerId,
-                paymentAmount: paymentIntent.amount,
+                paymentAmount: parcel.parcelTransportPrice,
                 paymentDate: new Date(),
                 parcelId: parcelId,
                 status: client_1.PaymentStatus.REQUIRES_CAPTURE,
@@ -201,15 +224,15 @@ const authorizedPaymentWithSaveCardFromStripe = (userId, payload) => __awaiter(v
             throw new AppError_1.default(http_status_1.default.CONFLICT, 'Failed to update project status');
         }
         // Send notification to the user
-        // const user = await prisma.user.findUnique({
-        //   where: { id: userId },
-        //   select: { fcmToken: true },
-        // });
-        // const notificationTitle = 'Payment Successful';
-        // const notificationBody = 'Your payment has been processed successfully and your project is confirmed';
-        // if (user && user.fcmToken) {
-        //   await notificationService.sendNotification(user.fcmToken, notificationTitle, notificationBody, userId);
-        // }
+        const user = yield prisma_1.default.user.findUnique({
+            where: { id: parcel.deliveryPersonId },
+            select: { fcmToken: true },
+        });
+        const notificationTitle = 'Payment Successful';
+        const notificationBody = 'Your payment has been processed successfully and hold for delivery. Start your delivery now';
+        if (user && user.fcmToken) {
+            yield Notification_service_1.notificationService.sendNotification(user.fcmToken, notificationTitle, notificationBody, parcel.deliveryPersonId);
+        }
     }
     return paymentIntent;
 });
@@ -219,7 +242,7 @@ const capturePaymentRequestToStripe = (payload) => __awaiter(void 0, void 0, voi
     const parcel = yield prisma_1.default.parcel.findUnique({
         where: {
             id: parcelId,
-            parcelStatus: client_1.ParcelStatus.DELIVERED,
+            parcelStatus: client_1.ParcelStatus.COMPLETED,
         },
     });
     if (!parcel) {
@@ -227,7 +250,8 @@ const capturePaymentRequestToStripe = (payload) => __awaiter(void 0, void 0, voi
     }
     const payment = yield prisma_1.default.payment.findUnique({
         where: { parcelId: parcelId },
-        select: { paymentId: true,
+        select: {
+            paymentId: true,
             paymentAmount: true,
             stripeAccountIdReceiver: true,
         },
@@ -241,15 +265,15 @@ const capturePaymentRequestToStripe = (payload) => __awaiter(void 0, void 0, voi
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Payment not captured');
     }
     const transfer = yield stripe.transfers.create({
-        amount: payment.paymentAmount, // Amount in the smallest currency unit (e.g., cents for USD)
-        currency: 'ngn', // Currency of the connected account
+        amount: payment.paymentAmount * 100, // Amount in the smallest currency unit (e.g., cents for USD)
+        currency: 'usd', // Currency of the connected account
         destination: payment.stripeAccountIdReceiver, // Connected account ID
         metadata: {
             parcelId: parcelId, // Include parcel or order-related metadata
         },
     });
     if (!transfer) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Transfer not created');
+        throw new AppError_1.default(http_status_1.default.PAYMENT_REQUIRED, 'Transfer not created');
     }
     const paymentStatus = yield prisma_1.default.payment.update({
         where: { parcelId: parcelId },
@@ -366,8 +390,7 @@ const getCustomerDetailsFromStripe = (userId) => __awaiter(void 0, void 0, void 
         });
         // Retrieve the customer details from Stripe
         if (!userData || !userData.senderCustomerID) {
-            return { 'message': 'User data or customer ID not found' };
-            ;
+            return { message: 'User data or customer ID not found' };
         }
         const customer = yield stripe.customers.retrieve(userData.senderCustomerID);
         return customer;

@@ -42,10 +42,12 @@ const config_1 = __importDefault(require("../../../config"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const generateToken_1 = require("../../utils/generateToken");
 const prisma_1 = __importDefault(require("../../utils/prisma"));
+const client_1 = require("@prisma/client");
 const loginUserFromDB = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const userData = yield prisma_1.default.user.findUniqueOrThrow({
         where: {
             email: payload.email,
+            status: client_1.UserStatus.ACTIVE,
         },
     });
     if (!userData.password) {
@@ -55,6 +57,14 @@ const loginUserFromDB = (payload) => __awaiter(void 0, void 0, void 0, function*
     if (!isCorrectPassword) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Password incorrect');
     }
+    const user = yield prisma_1.default.user.update({
+        where: {
+            id: userData.id,
+        },
+        data: {
+            fcmToken: payload.fcmToken,
+        },
+    });
     const accessToken = yield (0, generateToken_1.generateToken)({
         id: userData.id,
         email: userData.email,

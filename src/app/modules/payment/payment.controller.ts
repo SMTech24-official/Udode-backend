@@ -13,7 +13,7 @@ import prisma from '../../utils/prisma';
 
 const createAccount = catchAsync( async (req: Request, res: Response) => {
   const user = req.user as any;
-  const result = await StripeServices.createAccountIntoStripe(user);
+  const result = await StripeServices.createAccountIntoStripe(user.id);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,

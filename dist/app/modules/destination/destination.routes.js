@@ -1,0 +1,21 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.destinationRoutes = void 0;
+const express_1 = __importDefault(require("express"));
+const auth_1 = __importDefault(require("../../middlewares/auth"));
+const validateRequest_1 = __importDefault(require("../../middlewares/validateRequest"));
+const destination_controller_1 = require("./destination.controller");
+const destination_validation_1 = require("./destination.validation");
+const multerUpload_1 = require("../../utils/multerUpload");
+const parseBody_1 = require("../../middlewares/parseBody");
+const updateMulterUpload_1 = require("../../utils/updateMulterUpload");
+const router = express_1.default.Router();
+router.post('/', multerUpload_1.multerUpload.single('destinationImage'), parseBody_1.parseBody, (0, validateRequest_1.default)(destination_validation_1.destinationValidation.createSchema), (0, auth_1.default)(), destination_controller_1.destinationController.createDestination);
+router.get('/', (0, auth_1.default)(), destination_controller_1.destinationController.getDestinationList);
+router.get('/:id', (0, auth_1.default)(), destination_controller_1.destinationController.getDestinationById);
+router.put('/:destinationId', updateMulterUpload_1.updateMulterUpload.single('destinationImage'), parseBody_1.parseBody, (0, validateRequest_1.default)(destination_validation_1.destinationValidation.updateSchema), (0, auth_1.default)(), destination_controller_1.destinationController.updateDestination);
+router.delete('/:id', (0, auth_1.default)(), destination_controller_1.destinationController.deleteDestination);
+exports.destinationRoutes = router;

@@ -26,7 +26,16 @@ const createTripIntoDb = (userId, data) => __awaiter(void 0, void 0, void 0, fun
     return result;
 });
 const getTripListFromDb = () => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield prisma_1.default.trip.findMany();
+    const result = yield prisma_1.default.trip.findMany({
+        include: {
+            user: {
+                select: {
+                    fullName: true,
+                    image: true,
+                },
+            },
+        },
+    });
     if (result.length === 0) {
         return { message: 'Trip not found' };
     }
@@ -36,6 +45,14 @@ const getTripByIdFromDb = (tripId) => __awaiter(void 0, void 0, void 0, function
     const result = yield prisma_1.default.trip.findUnique({
         where: {
             id: tripId,
+        },
+        include: {
+            user: {
+                select: {
+                    fullName: true,
+                    image: true,
+                },
+            },
         },
     });
     if (!result) {
@@ -65,10 +82,22 @@ const deleteTripItemFromDb = (userId, tripId) => __awaiter(void 0, void 0, void 
     });
     return deletedItem;
 });
+const getTripListByUserFromDb = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield prisma_1.default.trip.findMany({
+        where: {
+            userId: userId,
+        },
+    });
+    if (result.length === 0) {
+        return { message: 'Trip not found' };
+    }
+    return result;
+});
 exports.tripService = {
     createTripIntoDb,
     getTripListFromDb,
     getTripByIdFromDb,
     updateTripIntoDb,
     deleteTripItemFromDb,
+    getTripListByUserFromDb,
 };

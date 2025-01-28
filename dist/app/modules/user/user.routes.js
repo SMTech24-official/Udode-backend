@@ -11,6 +11,7 @@ const user_validation_1 = require("../user/user.validation");
 const user_controller_1 = require("../user/user.controller");
 const client_1 = require("@prisma/client");
 const multerUpload_1 = require("../../utils/multerUpload");
+const multipleFile_1 = require("../../utils/multipleFile");
 const router = express_1.default.Router();
 router.post('/register', (0, validateRequest_1.default)(user_validation_1.UserValidations.registerUser), user_controller_1.UserControllers.registerUser);
 router.get('/', user_controller_1.UserControllers.getAllUsers);
@@ -28,4 +29,8 @@ router.put('/update-password', user_controller_1.UserControllers.updatePassword)
 router.post('/social-sign-up', (0, validateRequest_1.default)(user_validation_1.UserValidations.socialLoginSchema), user_controller_1.UserControllers.socialLogin);
 router.post('/withdraw', (0, auth_1.default)(), user_controller_1.UserControllers.withdrawBalance);
 router.put('/update-profile-image', multerUpload_1.multerUpload.single('profileImage'), (0, auth_1.default)(), user_controller_1.UserControllers.updateProfileImage);
+router.put('/id-proof', multipleFile_1.multerUploadMultiple.fields([
+    { name: 'frontIdCard', maxCount: 1 },
+    { name: 'backIdCard', maxCount: 1 },
+]), (0, auth_1.default)(), user_controller_1.UserControllers.uploadIdProof);
 exports.UserRouters = router;

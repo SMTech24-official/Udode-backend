@@ -18,7 +18,16 @@ const createTripIntoDb = async (userId: string, data: any) => {
 };
 
 const getTripListFromDb = async () => {
-  const result = await prisma.trip.findMany();
+  const result = await prisma.trip.findMany({
+    include: {
+      user: {
+        select: {
+          fullName: true,
+          image: true,
+        },
+      },
+    },
+  });
   if (result.length === 0) {
     return { message: 'Trip not found' };
   }
@@ -29,6 +38,14 @@ const getTripByIdFromDb = async (tripId: string) => {
   const result = await prisma.trip.findUnique({
     where: {
       id: tripId,
+    },
+    include: {
+      user: {
+        select: {
+          fullName: true,
+          image: true,
+        },
+      },
     },
   });
   if (!result) {
@@ -65,10 +82,23 @@ const deleteTripItemFromDb = async (userId: string, tripId: string) => {
   return deletedItem;
 };
 
+const getTripListByUserFromDb = async (userId: string) => {
+  const result = await prisma.trip.findMany({
+    where: {
+      userId: userId,
+    },
+  });
+  if (result.length === 0) {
+    return { message: 'Trip not found' };
+  }
+  return result;
+};
+
 export const tripService = {
   createTripIntoDb,
   getTripListFromDb,
   getTripByIdFromDb,
   updateTripIntoDb,
   deleteTripItemFromDb,
+  getTripListByUserFromDb,
 };

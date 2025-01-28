@@ -11,32 +11,34 @@ datasource db {
 }
 
 model User {
-  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
   fullName         String
-  email            String         @unique
+  email            String       @unique
   password         String?
-  role             UserRoleEnum   @default(USER)
-  status           UserStatus     @default(INACTIVE)
+  role             UserRoleEnum @default(USER)
+  status           UserStatus   @default(INACTIVE)
   location         String?
   phone            String?
-  isVerified       Boolean        @default(false)
+  isVerified       Boolean      @default(false)
   image            String?
   otp              Int?
   otpExpiry        DateTime?
   fcmToken         String?
-  onBoarding       Boolean        @default(false)
+  frontIdCard      String?
+  backIdCard       String?
+  onBoarding       Boolean      @default(false)
   stripeAccountUrl String?
   stripeCustomerId String?
   senderCustomerID String?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   // Relationships
-  roomsSent        Room[]         @relation("SenderRelation")
-  roomsReceived    Room[]         @relation("ReceiverRelation")
+  roomsSent        Room[]     @relation("SenderRelation")
+  roomsReceived    Room[]     @relation("ReceiverRelation")
   roomParticipants RoomUser[]
-   chatsSent     Chat[]        @relation("SenderRelation")
-  chatsReceived Chat[]        @relation("ReceiverRelation")
+  chatsSent        Chat[]     @relation("SenderRelation")
+  chatsReceived    Chat[]     @relation("ReceiverRelation")
 
   // Terminal
   terminals        Terminal[]
@@ -46,41 +48,40 @@ model User {
   comments         Comment[]
   notifications    Notification[]
   categories       Category[]
-  parcelsSent      Parcel[]        @relation("SenderPersonRelation")
-  parcelsDelivered Parcel[]        @relation("DeliveryPersonRelation")
+  destinations     Destination[]
+  parcelsSent      Parcel[]       @relation("SenderPersonRelation")
+  parcelsDelivered Parcel[]       @relation("DeliveryPersonRelation")
   // @@map("users")
 
   @@map("users")
 }
 
 model Room {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  name        String?
-  type        RoomType  @default(ONE_TO_ONE) // Type: One-to-one or Group chat
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  name         String?
+  type         RoomType   @default(ONE_TO_ONE) // Type: One-to-one or Group chat
   participants RoomUser[] // Relationship to participants (RoomUser table)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  chat        Chat[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  chat         Chat[]
 
-  senderId    String?   @db.ObjectId
-  receiverId  String?   @db.ObjectId
-  sender      User?     @relation("SenderRelation", fields: [senderId], references: [id])
-  receiver    User?     @relation("ReceiverRelation", fields: [receiverId], references: [id])
+  senderId   String? @db.ObjectId
+  receiverId String? @db.ObjectId
+  sender     User?   @relation("SenderRelation", fields: [senderId], references: [id])
+  receiver   User?   @relation("ReceiverRelation", fields: [receiverId], references: [id])
 
   @@map("rooms")
 }
 
 model RoomUser {
-  id       String @id @default(auto()) @map("_id") @db.ObjectId
-  roomId   String @db.ObjectId
-  userId   String @db.ObjectId
-  room     Room   @relation(fields: [roomId], references: [id])
-  user     User   @relation(fields: [userId], references: [id])
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  roomId String @db.ObjectId
+  userId String @db.ObjectId
+  room   Room   @relation(fields: [roomId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   @@map("room_users")
 }
-
-
 
 model Chat {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -90,18 +91,16 @@ model Chat {
   message    String
   images     String[]
   isRead     Boolean  @default(false)
-  parcelId   String?  @db.ObjectId
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   // Relationships
-  sender     User     @relation("SenderRelation", fields: [senderId], references: [id])
-  receiver   User?    @relation("ReceiverRelation", fields: [receiverId], references: [id]) // Optional for group chats
-  room       Room     @relation(fields: [roomId], references: [id])
+  sender   User  @relation("SenderRelation", fields: [senderId], references: [id])
+  receiver User? @relation("ReceiverRelation", fields: [receiverId], references: [id]) // Optional for group chats
+  room     Room  @relation(fields: [roomId], references: [id])
 
   @@map("chats")
 }
-
 
 model Terminal {
   id                 String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -166,7 +165,7 @@ model Category {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  user            User  @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   TerminalFeed TerminalFeed[]
 
@@ -174,14 +173,14 @@ model Category {
 }
 
 model Trip {
-  id             String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId         String    @db.ObjectId
-  terminalId     String    @db.ObjectId
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @db.ObjectId
+  terminalId     String   @db.ObjectId
   tripDate       DateTime
   destination    String
   additionalNote String
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user     User      @relation(fields: [userId], references: [id])
   terminal Terminal  @relation(fields: [terminalId], references: [id])
@@ -191,25 +190,24 @@ model Trip {
 }
 
 model Comment {
-  id        String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String    @db.ObjectId
-  tripId    String    @db.ObjectId
-  parentId  String?   @db.ObjectId
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  tripId    String   @db.ObjectId
+  parentId  String?  @db.ObjectId
   comment   String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user     User       @relation(fields: [userId], references: [id])
-  trip     Trip       @relation(fields: [tripId], references: [id])
-  parent   Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  replies  Comment[]  @relation("CommentReplies")
+  user    User      @relation(fields: [userId], references: [id])
+  trip    Trip      @relation(fields: [tripId], references: [id])
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies Comment[] @relation("CommentReplies")
 
   @@index([tripId], name: "idx_tripId") // Index for faster trip-based queries
   @@index([userId], name: "idx_userId") // Index for user-specific queries
   @@index([parentId], name: "idx_parentId") // Index for nested comments
   @@map("comments")
 }
-
 
 model Notification {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -241,7 +239,6 @@ model Notification {
 //   @@map("chats")
 // }
 
-
 // model Room {
 //   id          String   @id @default(auto()) @map("_id") @db.ObjectId
 //   name        String?  // Name for the group (optional for one-to-one)
@@ -257,7 +254,6 @@ model Notification {
 
 //   @@map("rooms")
 // }
-
 
 model Parcel {
   id                   String        @id @default(auto()) @map("_id") @db.ObjectId
@@ -278,7 +274,7 @@ model Parcel {
 
   senderPerson   User      @relation("SenderPersonRelation", fields: [userId], references: [id])
   deliveryPerson User?     @relation("DeliveryPersonRelation", fields: [deliveryPersonId], references: [id])
-  payment       Payment[]
+  payment        Payment[]
 
   @@map("parcels")
 }
@@ -300,6 +296,22 @@ model Payment {
   @@map("payments")
 }
 
+model Destination {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  image           String
+  destinationName String   
+  location        String?
+  latitude        Float?
+  longitude       Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("destinations")
+}
+
 enum UserRoleEnum {
   USER
   ADMIN
@@ -317,6 +329,7 @@ enum ParcelStatus {
   ACCEPTED
   DELIVERED
   CANCELLED
+  COMPLETED
 }
 
 enum PaymentStatus {

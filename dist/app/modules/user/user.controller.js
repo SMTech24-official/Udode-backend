@@ -167,6 +167,23 @@ const withdrawBalance = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         data: result,
     });
 }));
+const uploadIdProof = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = req.user;
+    const files = req.files;
+    if (!files || !files.frontIdCard || !files.backIdCard) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Files not found');
+    }
+    const frontIdCardFile = files.frontIdCard[0];
+    const backIdCardFile = files.backIdCard[0];
+    const frontIdCardUrl = yield (0, multerUpload_1.uploadFileToSpace)(frontIdCardFile, 'retire-professional');
+    const backIdCardUrl = yield (0, multerUpload_1.uploadFileToSpace)(backIdCardFile, 'retire-professional');
+    const result = yield user_service_1.UserServices.uploadIdProofIntoDB(user.id, frontIdCardUrl, backIdCardUrl);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        message: 'ID proof uploaded successfully',
+        data: result,
+    });
+}));
 exports.UserControllers = {
     registerUser,
     getAllUsers,
@@ -184,4 +201,5 @@ exports.UserControllers = {
     updateMyProfile,
     getEarnings,
     withdrawBalance,
+    uploadIdProof,
 };

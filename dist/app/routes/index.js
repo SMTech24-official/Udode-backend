@@ -14,6 +14,8 @@ const terminalFeed_routes_1 = require("../modules/terminalFeed/terminalFeed.rout
 const category_routes_1 = require("../modules/category/category.routes");
 const review_routes_1 = require("../modules/review/review.routes");
 const payment_routes_1 = require("../modules/payment/payment.routes");
+const destination_routes_1 = require("../modules/destination/destination.routes");
+const Notification_routes_1 = require("../modules/Notification/Notification.routes");
 const router = express_1.default.Router();
 const moduleRoutes = [
     {
@@ -30,32 +32,40 @@ const moduleRoutes = [
     },
     {
         path: '/comments',
-        route: comment_routes_1.commentRoutes
+        route: comment_routes_1.commentRoutes,
     },
     {
         path: '/terminals',
-        route: terminal_routes_1.terminalRoutes
+        route: terminal_routes_1.terminalRoutes,
     },
     {
         path: '/trips',
-        route: trip_routes_1.tripRoutes
+        route: trip_routes_1.tripRoutes,
     },
     {
         path: '/terminal-feeds',
-        route: terminalFeed_routes_1.terminalFeedRoutes
+        route: terminalFeed_routes_1.terminalFeedRoutes,
     },
     {
         path: '/categories',
-        route: category_routes_1.categoryRoutes
+        route: category_routes_1.categoryRoutes,
     },
     {
         path: '/reviews',
-        route: review_routes_1.reviewRoutes
+        route: review_routes_1.reviewRoutes,
     },
     {
         path: '/payments',
-        route: payment_routes_1.PaymentRoutes
-    }
+        route: payment_routes_1.PaymentRoutes,
+    },
+    {
+        path: '/destinations',
+        route: destination_routes_1.destinationRoutes,
+    },
+    {
+        path: '/notifications',
+        route: Notification_routes_1.NotificationRoutes,
+    },
 ];
 moduleRoutes.forEach(route => router.use(route.path, route.route));
 exports.default = router;

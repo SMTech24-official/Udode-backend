@@ -1,4 +1,4 @@
-import { UserRoleEnum } from '@prisma/client';
+import { UserRoleEnum, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import config from '../../config';
 import prisma from '../utils/prisma';
@@ -8,6 +8,7 @@ const superAdminData = {
   email: 'admin@gmail.com',
   password: '',
   role: UserRoleEnum.SUPER_ADMIN,
+  status: UserStatus.ACTIVE,
 };
 
 const seedSuperAdmin = async () => {

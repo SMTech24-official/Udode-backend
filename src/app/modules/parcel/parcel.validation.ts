@@ -27,7 +27,7 @@ const updateSchema = z.object({
 const parcelStatus = z.object({
   body: z.object({
 
- parcelStatus: z.enum(['PENDING', 'ACCEPTED', 'DELIVERED', 'CANCELLED']),
+ parcelStatus: z.enum(['PENDING', 'ACCEPTED', 'DELIVERED', 'CANCELLED', 'COMPLETED']),
   
   }),
 });

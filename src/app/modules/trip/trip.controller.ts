@@ -65,10 +65,22 @@ const deleteTrip = catchAsync(async (req, res) => {
   });
 });
 
+const getTripListByUser = catchAsync(async (req, res) => {
+  const user = req.user as any;
+  const result = await tripService.getTripListByUserFromDb(user.id);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Trip list retrieved successfully',
+    data: result,
+  });
+});
+
 export const tripController = {
   createTrip,
   getTripList,
   getTripById,
   updateTrip,
   deleteTrip,
+  getTripListByUser,
 };

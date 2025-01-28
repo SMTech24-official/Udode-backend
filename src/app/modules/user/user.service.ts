@@ -127,6 +127,7 @@ const getMyProfileFromDB = async (id: string) => {
       status: true,
       location: true,
       isVerified: true,
+      onBoarding: true,
     },
   });
 
@@ -546,15 +547,29 @@ const getEarningsFromDB = async (userId: string) => {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
 
+  // if (user.stripeCustomerId) {
+  //   const balance = await stripe.balance.retrieve({
+  //     stripeAccount: user.stripeCustomerId,
+  //   });
+
+  //   return balance;
+  // }
   if (user.stripeCustomerId) {
-    const balance = await stripe.balance.retrieve({
-      stripeAccount: user.stripeCustomerId,
+    const payments = await prisma.payment.findMany({
+      where: {
+        stripeAccountIdReceiver: user.stripeCustomerId,
+      },
+      select: {
+        paymentAmount: true,
+      }
     });
 
-    return balance;
+    const totalEarnings = payments.reduce((total, payment) => total + payment.paymentAmount, 0);
+
+    return { totalEarnings, payments };
   }
 
-  return user;
+  // return user;
 };
 
 
@@ -586,22 +601,21 @@ const withdrawBalanceFromDB = async (userId: string, data: {
    if (isNaN(validAmount)) {
      throw new AppError(httpStatus.BAD_REQUEST, 'Invalid amount provided!');
    }
-   const transportPriceInKobo = Math.round(validAmount * 100); // Convert to Kobo
 
-   console.log(transportPriceInKobo);
-   if (transportPriceInKobo < 25000) {
-     throw new AppError(
-       httpStatus.BAD_REQUEST,
-       'Minimum amount to be paid is 250',
-     );
-   }
+  //  console.log(transportPriceInKobo);
+  //  if (transportPriceInKobo < 25000) {
+  //    throw new AppError(
+  //      httpStatus.BAD_REQUEST,
+  //      'Minimum amount to be paid is 250',
+  //    );
+  //  }
 
   // Create a payout to the connected account's bank account
  
     const payout = await stripe.payouts.create(
       {
-        amount: transportPriceInKobo, // Amount in cents (e.g., $10.00 = 1000)
-        currency: 'ngn', // Ensure currency matches the connected account's balance
+        amount: data.amount * 100, // Amount in cents (e.g., $10.00 = 1000)
+        currency: 'usd', // Ensure currency matches the connected account's balance
         method: 'instant', // Optional: 'instant' for faster payouts, incurs fees
       },
       {
@@ -617,6 +631,28 @@ const withdrawBalanceFromDB = async (userId: string, data: {
 
     return { message: 'Amount transferred successfully!', payout };
   
+};
+
+
+const uploadIdProofIntoDB = async (
+  userId: string,
+  frontIdCardUrl: string,
+  backIdCardUrl: string,
+) => {
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      frontIdCard: frontIdCardUrl,
+      backIdCard: backIdCardUrl,
+      isVerified: true,
+    },
+  });
+
+  if (!updatedUser) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'ID Proof not updated!');
+  }
+
+  return updatedUser;
 };
 
 
@@ -637,4 +673,5 @@ export const UserServices = {
   updateProfileImageIntoDB,
   getEarningsFromDB,
   withdrawBalanceFromDB,
+  uploadIdProofIntoDB,
 };

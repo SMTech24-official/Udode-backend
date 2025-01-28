@@ -5,18 +5,21 @@ import config from '../../../config';
 import AppError from '../../errors/AppError';
 import { generateToken } from '../../utils/generateToken';
 import prisma from '../../utils/prisma';
+import { UserStatus } from '@prisma/client';
 
 const loginUserFromDB = async (payload: {
   email: string;
   password: string;
+  fcmToken: string;
 }) => {
   const userData = await prisma.user.findUniqueOrThrow({
     where: {
       email: payload.email,
+      status: UserStatus.ACTIVE,
     },
   });
 
-  if(!userData.password){
+  if (!userData.password) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Password incorrect');
   }
 
@@ -28,6 +31,14 @@ const loginUserFromDB = async (payload: {
   if (!isCorrectPassword) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Password incorrect');
   }
+  const user = await prisma.user.update({
+    where: {
+      id: userData.id,
+    },
+    data: {
+      fcmToken: payload.fcmToken,
+    },
+  });
 
   const accessToken = await generateToken(
     {

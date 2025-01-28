@@ -139,6 +139,7 @@ const getMyProfileFromDB = (id) => __awaiter(void 0, void 0, void 0, function* (
             status: true,
             location: true,
             isVerified: true,
+            onBoarding: true,
         },
     });
     return Profile;
@@ -469,13 +470,25 @@ const getEarningsFromDB = (userId) => __awaiter(void 0, void 0, void 0, function
     if (!user) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'User not found!');
     }
+    // if (user.stripeCustomerId) {
+    //   const balance = await stripe.balance.retrieve({
+    //     stripeAccount: user.stripeCustomerId,
+    //   });
+    //   return balance;
+    // }
     if (user.stripeCustomerId) {
-        const balance = yield stripe.balance.retrieve({
-            stripeAccount: user.stripeCustomerId,
+        const payments = yield prisma_1.default.payment.findMany({
+            where: {
+                stripeAccountIdReceiver: user.stripeCustomerId,
+            },
+            select: {
+                paymentAmount: true,
+            }
         });
-        return balance;
+        const totalEarnings = payments.reduce((total, payment) => total + payment.paymentAmount, 0);
+        return { totalEarnings, payments };
     }
-    return user;
+    // return user;
 });
 const withdrawBalanceFromDB = (userId, data) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield prisma_1.default.user.findUnique({
@@ -496,15 +509,17 @@ const withdrawBalanceFromDB = (userId, data) => __awaiter(void 0, void 0, void 0
     if (isNaN(validAmount)) {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Invalid amount provided!');
     }
-    const transportPriceInKobo = Math.round(validAmount * 100); // Convert to Kobo
-    console.log(transportPriceInKobo);
-    if (transportPriceInKobo < 25000) {
-        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Minimum amount to be paid is 250');
-    }
+    //  console.log(transportPriceInKobo);
+    //  if (transportPriceInKobo < 25000) {
+    //    throw new AppError(
+    //      httpStatus.BAD_REQUEST,
+    //      'Minimum amount to be paid is 250',
+    //    );
+    //  }
     // Create a payout to the connected account's bank account
     const payout = yield stripe.payouts.create({
-        amount: transportPriceInKobo, // Amount in cents (e.g., $10.00 = 1000)
-        currency: 'ngn', // Ensure currency matches the connected account's balance
+        amount: data.amount * 100, // Amount in cents (e.g., $10.00 = 1000)
+        currency: 'usd', // Ensure currency matches the connected account's balance
         method: 'instant', // Optional: 'instant' for faster payouts, incurs fees
     }, {
         stripeAccount: user.stripeCustomerId, // Connected account ID
@@ -513,6 +528,20 @@ const withdrawBalanceFromDB = (userId, data) => __awaiter(void 0, void 0, void 0
         throw new AppError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, 'Payout failed!');
     }
     return { message: 'Amount transferred successfully!', payout };
+});
+const uploadIdProofIntoDB = (userId, frontIdCardUrl, backIdCardUrl) => __awaiter(void 0, void 0, void 0, function* () {
+    const updatedUser = yield prisma_1.default.user.update({
+        where: { id: userId },
+        data: {
+            frontIdCard: frontIdCardUrl,
+            backIdCard: backIdCardUrl,
+            isVerified: true,
+        },
+    });
+    if (!updatedUser) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'ID Proof not updated!');
+    }
+    return updatedUser;
 });
 exports.UserServices = {
     registerUserIntoDB,
@@ -531,4 +560,5 @@ exports.UserServices = {
     updateProfileImageIntoDB,
     getEarningsFromDB,
     withdrawBalanceFromDB,
+    uploadIdProofIntoDB,
 };

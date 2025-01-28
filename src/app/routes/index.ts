@@ -10,6 +10,8 @@ import { terminalFeedRoutes } from '../modules/terminalFeed/terminalFeed.routes'
 import { categoryRoutes } from '../modules/category/category.routes';
 import { reviewRoutes } from '../modules/review/review.routes';
 import { PaymentRoutes } from '../modules/payment/payment.routes';
+import { destinationRoutes } from '../modules/destination/destination.routes';
+import { NotificationRoutes } from '../modules/Notification/Notification.routes';
 const router = express.Router();
 
 const moduleRoutes = [
@@ -27,32 +29,40 @@ const moduleRoutes = [
   },
   {
     path: '/comments',
-    route: commentRoutes
+    route: commentRoutes,
   },
   {
     path: '/terminals',
-    route: terminalRoutes
+    route: terminalRoutes,
   },
   {
     path: '/trips',
-    route: tripRoutes
+    route: tripRoutes,
   },
   {
     path: '/terminal-feeds',
-    route: terminalFeedRoutes
+    route: terminalFeedRoutes,
   },
   {
     path: '/categories',
-    route: categoryRoutes
+    route: categoryRoutes,
   },
   {
     path: '/reviews',
-    route: reviewRoutes
+    route: reviewRoutes,
   },
   {
     path: '/payments',
-    route: PaymentRoutes
-  }
+    route: PaymentRoutes,
+  },
+  {
+    path: '/destinations',
+    route: destinationRoutes,
+  },
+  {
+    path: '/notifications',
+    route: NotificationRoutes,
+  },
 ];
 
 moduleRoutes.forEach(route => router.use(route.path, route.route));

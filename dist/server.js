@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const app_1 = __importDefault(require("./app"));
 const DB_1 = __importDefault(require("./app/DB"));
 const config_1 = __importDefault(require("./config"));
-const websocket_1 = require("./app/utils/websocket");
+const websocketSetUp_1 = require("./app/utils/websocketSetUp");
 const port = config_1.default.port || 5000;
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -23,7 +23,7 @@ function main() {
             console.log('Sever is running on port ', port);
             (0, DB_1.default)();
         });
-        (0, websocket_1.setupWebSocket)(server);
+        (0, websocketSetUp_1.setupWebSocket)(server);
         const exitHandler = () => {
             if (server) {
                 server.close(() => {

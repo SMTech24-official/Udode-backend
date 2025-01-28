@@ -44,6 +44,7 @@ const superAdminData = {
     email: 'admin@gmail.com',
     password: '',
     role: client_1.UserRoleEnum.SUPER_ADMIN,
+    status: client_1.UserStatus.ACTIVE,
 };
 const seedSuperAdmin = () => __awaiter(void 0, void 0, void 0, function* () {
     try {

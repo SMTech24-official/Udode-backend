@@ -5,6 +5,7 @@ import { UserValidations } from '../user/user.validation';
 import { UserControllers } from '../user/user.controller';
 import { UserRoleEnum } from '@prisma/client';
 import { multerUpload } from '../../utils/multerUpload';
+import { multerUploadMultiple } from '../../utils/multipleFile';
 const router = express.Router();
 
 router.post(
@@ -72,6 +73,14 @@ router.put(
   UserControllers.updateProfileImage,
 );
 
-
+router.put(
+  '/id-proof',
+  multerUploadMultiple.fields([
+    { name: 'frontIdCard', maxCount: 1 },
+    { name: 'backIdCard', maxCount: 1 },
+  ]),
+  auth(),
+  UserControllers.uploadIdProof,
+);
 
 export const UserRouters = router;

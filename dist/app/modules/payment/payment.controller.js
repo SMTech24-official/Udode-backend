@@ -22,7 +22,7 @@ const config_1 = __importDefault(require("../../../config"));
 const prisma_1 = __importDefault(require("../../utils/prisma"));
 const createAccount = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield payment_service_1.StripeServices.createAccountIntoStripe(user);
+    const result = yield payment_service_1.StripeServices.createAccountIntoStripe(user.id);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.CREATED,
         success: true,
@@ -33,7 +33,7 @@ const createAccount = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 // create a new customer with card
 const saveCardWithCustomerInfo = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
-    const result = yield payment_service_1.StripeServices.saveCardWithCustomerInfoIntoStripe(req.body, user.id);
+    const result = yield payment_service_1.StripeServices.saveCardWithCustomerInfoIntoStripe(req.body, user);
     (0, sendResponse_1.default)(res, {
         statusCode: 200,
         success: true,
